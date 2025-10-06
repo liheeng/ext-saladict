@@ -1,0 +1,7 @@
+2025-10-7:
+Fix: updated for extension manifest v3. 
+- create global SalaDict extension configuration obejct. 
+- use require.context to load scripts and css files intead of using import for manifest v3 limitation. 
+- create window agent to get window page size instead of directly using window object, because background thread in browser cannot access window page size.
+- play audio in current thread
+  

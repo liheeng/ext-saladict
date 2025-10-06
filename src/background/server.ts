@@ -16,11 +16,63 @@ import {
   getWordsByText,
   getWords
 } from './database'
-import { AudioManager } from './audio-manager'
+import { AudioManager } from '../_helpers/audio-manager'
 import { QsPanelManager } from './windows-manager'
 import { getTextFromClipboard, copyTextToClipboard } from './clipboard-manager'
 import './types'
-import { DictID } from '@/app-config'
+import { DictID, AppConfig } from '@/app-config'
+import { Profile, ProfileIDList } from '@/app-config/profiles'
+
+export class SalaDictExtension {
+  static appConfig: AppConfig
+  static activeProfile: Profile
+  static profileIDList: ProfileIDList
+  static instance: SalaDictExtension
+  static init = SalaDictExtension.getInstance
+
+  static getInstance() {
+    return (
+      SalaDictExtension.instance ||
+      (SalaDictExtension.instance = new SalaDictExtension())
+    )
+  }
+
+  private constructor() {
+    console.info('create AiDictExtension')
+    // singleton
+  }
+}
+
+// FIXME: added by Henry Lee(liheeng@gmail.com), 20250507
+// Since browser extension manifest v3, the security policy are updated, the import is forbidden to load script dynamically.
+// Here use require.context to get context object of target resources, then use them by pattern.
+const dictEngineScriptContext = require.context(
+  `@/components/dictionaries/`,
+  true,
+  /\.ts$/
+) // Updated regex for .ts or .tsx
+
+async function loadDictEngineScript(dictId: string): Promise<any | null> {
+  const matchingModules = dictEngineScriptContext
+    .keys()
+    .filter(key => key.includes('/' + dictId + '/engine.ts'))
+
+  if (matchingModules.length > 0) {
+    const module = dictEngineScriptContext(matchingModules[0]) // Load the first match
+    console.log(`Loaded module: ${matchingModules[0]}`, module)
+    if (module.default) {
+      if (typeof module.default === 'function') {
+        module.default()
+      } else {
+        console.log('Loaded module has a default export:', module.default)
+      }
+    }
+    return module
+  }
+
+  console.log(`No module found matching pattern: ${dictId}`)
+  return null
+}
 
 /**
  * background script as transfer station
@@ -43,11 +95,12 @@ export class BackgroundServer {
     search: SearchFunction<DictSearchResult<any>, P>
     getSrcPage: GetSrcPageFunction
   }> {
-    return import(
-      /* webpackInclude: /engine\.ts$/ */
-      /* webpackMode: "lazy" */
-      `@/components/dictionaries/${id}/engine.ts`
-    )
+    // return import(
+    //   /* webpackInclude: /engine\.ts$/ */
+    //   /* webpackMode: "lazy" */
+    //   `@/components/dictionaries/${id}/engine.ts`
+    // )
+    return loadDictEngineScript(id)
   }
 
   private qsPanelManager: QsPanelManager
@@ -58,15 +111,22 @@ export class BackgroundServer {
 
     message.addListener((msg, sender: browser.runtime.MessageSender) => {
       switch (msg.type) {
+        // FIXME: Add by Henry Li, 20250421
+        // Added for return config to frondend, because since manifest v3 the background script is running
+        // in Service worker which cannot allow accessing or running GUI code, here just return extension configuration
+        // for the frondend/web page to use.
+        case 'SALADICT_EXTENSION_CONFIG':
+          return SalaDictExtension.appConfig as any
+
         case 'OPEN_DICT_SRC_PAGE':
           return this.openSrcPage(msg.payload)
         case 'OPEN_URL':
           return openUrl(msg.payload)
-        case 'PLAY_AUDIO':
-          return AudioManager.getInstance().play(msg.payload)
-        case 'STOP_AUDIO':
-          AudioManager.getInstance().reset()
-          return
+        // case 'PLAY_AUDIO':
+        //   return AudioManager.getInstance().play(msg.payload)
+        // case 'STOP_AUDIO':
+        //   AudioManager.getInstance().reset()
+        //   return
         case 'FETCH_DICT_RESULT':
           return this.fetchDictResult(msg.payload)
         case 'DICT_ENGINE_METHOD':
@@ -197,16 +257,34 @@ export class BackgroundServer {
       >(data.id)
 
       try {
+        // response = await timeout(
+        //   search(data.text, window.appConfig, window.activeProfile, payload),
+        //   25000
+        // )
         response = await timeout(
-          search(data.text, window.appConfig, window.activeProfile, payload),
+          search(
+            data.text,
+            SalaDictExtension.appConfig,
+            SalaDictExtension.activeProfile,
+            payload
+          ),
           25000
         )
       } catch (e) {
-        if (e.message === 'NETWORK_ERROR') {
+        if (e instanceof Error && e.message === 'NETWORK_ERROR') {
           // retry once
           await timer(500)
+          // response = await timeout(
+          //   search(data.text, window.appConfig, window.activeProfile, payload),
+          //   25000
+          // )
           response = await timeout(
-            search(data.text, window.appConfig, window.activeProfile, payload),
+            search(
+              data.text,
+              SalaDictExtension.appConfig,
+              SalaDictExtension.activeProfile,
+              payload
+            ),
             25000
           )
         } else {

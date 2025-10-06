@@ -351,6 +351,9 @@ export type MessageConfig = MessageConfigType<{
     payload: { [key: string]: string }
   }
 
+  /** Send extension config to frontend. */
+  AIDICT_EXTENSION_CONFIG: {}
+
   /* ------------------------------------------------ *\
      Third-party Scripts
   \* ------------------------------------------------ */

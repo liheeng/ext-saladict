@@ -1,4 +1,4 @@
-import { AudioManager } from '@/background/audio-manager'
+import { AudioManager } from '@/_helpers/audio-manager'
 
 const audioManager = AudioManager.getInstance()
 

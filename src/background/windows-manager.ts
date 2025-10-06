@@ -2,6 +2,8 @@ import { message, storage } from '@/_helpers/browser-api'
 import { Word } from '@/_helpers/record-manager'
 import { isFirefox } from '@/_helpers/saladict'
 import { getTitlebarOffset } from '@/_helpers/titlebar-offset'
+import { SalaDictExtension } from './server'
+import { getWindowPageInfo } from '@/_helpers/uitls'
 
 interface WinRect {
   width: number
@@ -79,6 +81,7 @@ export class MainWindowsManager {
     if (!mainWin || mainWin.id == null) {
       return
     }
+    const winPageInfo = await fetchWindowPageInfo()
 
     const sidebarWidth =
       (sidebarSnapshot && sidebarSnapshot.width) || window.appConfig.panelWidth
@@ -98,8 +101,8 @@ export class MainWindowsManager {
         : {
             top: 0,
             left: side === 'right' ? 0 : sidebarWidth,
-            width: window.screen.availWidth - sidebarWidth,
-            height: window.screen.availHeight,
+            width: winPageInfo.availWidth - sidebarWidth,
+            height: winPageInfo.availHeight,
             state: 'normal' as 'normal'
           }
 
@@ -202,7 +205,7 @@ export class QsPanelManager {
         type: 'basic',
         iconUrl: browser.runtime.getURL(`assets/icon-128.png`),
         title: `Saladict`,
-        message: err.message,
+        message: (err as Error).message,
         priority: 2,
         eventTime: Date.now() + 5000
       })
@@ -339,58 +342,59 @@ export class QsPanelManager {
     this.isSidebar = !this.isSidebar
   }
 
-  getDefaultRect(): WinRect {
+  async getDefaultRect(): Promise<WinRect> {
     const { qsLocation, qssaHeight } = window.appConfig
 
     let qsPanelLeft = 10
     let qsPanelTop = 30
     const qsPanelWidth = window.appConfig.panelWidth
     const qsPanelHeight = window.appConfig.qssaHeight
+    const winPageInfo = await fetchWindowPageInfo()
 
     switch (qsLocation) {
       case 'CENTER':
-        qsPanelLeft = (window.screen.availWidth - qsPanelWidth) / 2
-        qsPanelTop = (window.screen.availHeight - qssaHeight) / 2
+        qsPanelLeft = (winPageInfo.availWidth - qsPanelWidth) / 2
+        qsPanelTop = (winPageInfo.availHeight - qssaHeight) / 2
         break
       case 'TOP':
-        qsPanelLeft = (window.screen.availWidth - qsPanelWidth) / 2
+        qsPanelLeft = (winPageInfo.availWidth - qsPanelWidth) / 2
         qsPanelTop = 30
         break
       case 'RIGHT':
-        qsPanelLeft = window.screen.availWidth - qsPanelWidth - 30
-        qsPanelTop = (window.screen.availHeight - qssaHeight) / 2
+        qsPanelLeft = winPageInfo.availWidth - qsPanelWidth - 30
+        qsPanelTop = (winPageInfo.availHeight - qssaHeight) / 2
         break
       case 'BOTTOM':
-        qsPanelLeft = (window.screen.availWidth - qsPanelWidth) / 2
-        qsPanelTop = window.screen.availHeight - qsPanelHeight - 10
+        qsPanelLeft = (winPageInfo.availWidth - qsPanelWidth) / 2
+        qsPanelTop = winPageInfo.availHeight - qsPanelHeight - 10
         break
       case 'LEFT':
         qsPanelLeft = 10
-        qsPanelTop = (window.screen.availHeight - qssaHeight) / 2
+        qsPanelTop = (winPageInfo.availHeight - qssaHeight) / 2
         break
       case 'TOP_LEFT':
         qsPanelLeft = 10
         qsPanelTop = 30
         break
       case 'TOP_RIGHT':
-        qsPanelLeft = window.screen.availWidth - qsPanelWidth - 30
+        qsPanelLeft = winPageInfo.availWidth - qsPanelWidth - 30
         qsPanelTop = 30
         break
       case 'BOTTOM_LEFT':
         qsPanelLeft = 10
-        qsPanelTop = window.screen.availHeight - qsPanelHeight - 10
+        qsPanelTop = winPageInfo.availHeight - qsPanelHeight - 10
         break
       case 'BOTTOM_RIGHT':
-        qsPanelLeft = window.screen.availWidth - qsPanelWidth - 30
-        qsPanelTop = window.screen.availHeight - qsPanelHeight - 10
+        qsPanelLeft = winPageInfo.availWidth - qsPanelWidth - 30
+        qsPanelTop = winPageInfo.availHeight - qsPanelHeight - 10
         break
     }
 
     // coords must be integer
     // plus offset of other screen
     return {
-      top: Math.round(qsPanelTop + (window.screen['availTop'] || 0)),
-      left: Math.round(qsPanelLeft + (window.screen['availLeft'] || 0)),
+      top: Math.round(qsPanelTop + (winPageInfo['availTop'] || 0)),
+      left: Math.round(qsPanelLeft + (winPageInfo['availLeft'] || 0)),
       width: Math.round(qsPanelWidth),
       height: Math.round(qsPanelHeight)
     }
@@ -412,6 +416,8 @@ export class QsPanelManager {
     const panelWidth =
       (this.snapshot && this.snapshot.width) || window.appConfig.panelWidth
     const mainWin = this.mainWindowsManager.snapshot
+    const winPageInfo = await fetchWindowPageInfo()
+
     return mainWin &&
       mainWin.state === 'normal' &&
       mainWin.top != null &&
@@ -434,10 +440,29 @@ export class QsPanelManager {
       : {
           top: 0,
           left: Math.round(
-            side === 'right' ? window.screen.availWidth - panelWidth : 0
+            side === 'right' ? winPageInfo.availWidth - panelWidth : 0
           ),
           width: Math.round(panelWidth),
-          height: Math.round(window.screen.availHeight)
+          height: Math.round(winPageInfo.availHeight)
         }
   }
+}
+
+async function fetchWindowPageInfo() {
+  let windowPageInfo = await getWindowPageInfo()
+  if (!windowPageInfo) {
+    console.error(
+      'getWindowPageInfo failed, use default rect instead',
+      'default rect = {top: 0, left: 0, width: 1024, height: 800}'
+    )
+    windowPageInfo = {
+      width: 1024,
+      height: 800,
+      availWidth: 1024,
+      availHeight: 800,
+      colorDepth: 24,
+      pixelDepth: 24
+    }
+  }
+  return windowPageInfo
 }

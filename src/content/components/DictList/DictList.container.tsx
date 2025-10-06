@@ -8,6 +8,7 @@ import memoizeOne from 'memoize-one'
 import { StoreState, StoreDispatch } from '@/content/redux/modules'
 import { message } from '@/_helpers/browser-api'
 import { DictList, DictListProps } from './DictList'
+import { AudioManager } from '@/_helpers/audio-manager'
 
 const memoizedDicts = memoizeOne(
   (
@@ -85,9 +86,20 @@ const mapDispatchToProps: MapDispatchToPropsFunction<
     return new Promise(resolve => {
       dispatch((dispatch, getState) => {
         if (getState().isExpandWaveformBox) {
-          message.self.send({ type: 'PLAY_AUDIO', payload: src }).then(resolve)
+          // message.self.send({ type: 'PLAY_AUDIO', payload: src }).then(resolve)
+          AudioManager.getInstance()
+            .play(src)
+            .then(resolve)
         } else {
-          message.send({ type: 'PLAY_AUDIO', payload: src }).then(resolve)
+          // message.send({ type: 'PLAY_AUDIO', payload: src }).then(resolve)
+          console.debug('play audio (', src, ')');
+          AudioManager.getInstance().play(src)
+              .then((result) => {
+                  console.debug('play audio (', src, ') result: ', result);
+              })
+              .catch((error) => {
+                  console.error('play audio (', src, ') error: ', error);
+              });
         }
         dispatch({
           type: 'PLAY_AUDIO',

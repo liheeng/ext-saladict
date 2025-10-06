@@ -37,31 +37,95 @@ export interface DictItemBodyProps {
   onInPanelSelect: (e: React.MouseEvent<HTMLElement>) => void
 }
 
+// FIXME: added by Henry Lee(liheeng@gmail.com), 20250507
+// Since browser extension manifest v3, the security policy are updated, the dymamical scripts/css loading are forbidden.
+// The dynamic loading of Dict View and CSS are changed to pre-load instead of dynamic loading.
+// The View and CSS of all Dict View and CSS are loaded into array, and use dict id to identify them.
+// The code change show below.
+
+// const dictViewScriptContext = require.context(`@/components/dictionaries/`, true, /^\.\/[^\/]+\/.*\.tsx$/); // Updated regex for .tsx
+
+// async function loadDictViewScript(dictId: string): Promise<any | null> {
+//   const matchingModules = dictViewScriptContext.keys().filter(key => key.includes('/' + dictId + '/View.tsx'));;
+
+//   if (matchingModules.length > 0) {
+//     const module = dictViewScriptContext(matchingModules[0]); // Load the first match
+//     console.log(`Loaded module: ${matchingModules[0]}`, module);
+//     if (module.default) {
+//       if (typeof module.default === 'function') {
+//         module.default();
+//       } else {
+//         console.log('Loaded module has a default export:', module.default);
+//       }
+//     }
+//     return module;
+//   }
+
+//   console.log(`No module found matching pattern: ${dictId}`);
+//   return null;
+// }
+
+// dict views.tsx
+const viewContext = require.context(
+  `@/components/dictionaries`,
+  true,
+  /^\.\/[^/]+\/.*\.tsx$/
+)
+
+export const dictViews: Record<string, React.LazyExoticComponent<any>> = {}
+
+viewContext.keys().forEach(key => {
+  const dictID = String(key).split('/')[1] // assumes path like './<dictID>/View.tsx'
+  console.info('Loading dictionary View.tsx:', dictID)
+  dictViews[dictID] = React.lazy(() =>
+    import(`@/components/dictionaries/${dictID}/View.tsx`)
+  )
+})
+
+// dict views.tsx`@/components/dictionaries/${props.dictID}/_style.shadow.scss
+const styleContext = require.context(
+  `@/components/dictionaries`,
+  true,
+  /^\.\/[^/]+\/_style.shadow.scss$/
+)
+
+const styles: Record<string, string> = {}
+
+styleContext.keys().forEach(key => {
+  const dictID = String(key).split('/')[1] // './dictA/_style.shadow.scss'
+  styles[dictID] = styleContext(key).default || styleContext(key) // compiled CSS string
+})
+
 export const DictItemBody: FC<DictItemBodyProps> = props => {
   const Dict = useMemo(
     () =>
-      React.lazy<ComponentType<ViewPorps<any>>>(() =>
-        import(
-          /* webpackInclude: /View\.tsx$/ */
-          /* webpackMode: "lazy" */
-          `@/components/dictionaries/${props.dictID}/View.tsx`
-        )
-      ),
+      // React.lazy<ComponentType<ViewPorps<any>>>(() =>
+      //   import(
+      //     /* webpackInclude: /View\.tsx$/ */
+      //     /* webpackMode: "lazy" */
+      //     `@/components/dictionaries/${props.dictID}/View.tsx`
+      //   )
+      // ),
+      dictViews[props.dictID],
     [props.dictID]
   )
 
   const DictStyle = useMemo(
     () =>
       React.lazy(async () => {
-        const styleModule = await import(
-          /* webpackInclude: /_style\.shadow\.scss$/ */
-          /* webpackMode: "lazy" */
-          `@/components/dictionaries/${props.dictID}/_style.shadow.scss`
-        )
+        // const styleModule = await import(
+        //   /* webpackInclude: /_style\.shadow\.scss$/ */
+        //   /* webpackMode: "lazy" */
+        //   `@/components/dictionaries/${props.dictID}/_style.shadow.scss`
+        // )
+        // return {
+        //   default: () => (
+        //     <style>{(styleModule.default || styleModule).toString()}</style>
+        //   )
+        // }
+        const style = styles[props.dictID]
         return {
-          default: () => (
-            <style>{(styleModule.default || styleModule).toString()}</style>
-          )
+          default: () => <style>{style}</style>
         }
       }),
     [props.dictID]
