@@ -6,8 +6,9 @@ import { timer } from '@/_helpers/promise-more'
 import * as configManagerMock from '@/_helpers/__mocks__/config-manager'
 import { openUrl as openUrlMock } from '@/_helpers/__mocks__/browser-api'
 import { browser } from '../../helper'
+import { SalaDictExtension } from '@/background/server'
 
-window.appConfig = getDefaultConfig()
+SalaDictExtension.appConfig = getDefaultConfig()
 
 jest.mock('@/_helpers/config-manager')
 jest.mock('@/_helpers/browser-api')

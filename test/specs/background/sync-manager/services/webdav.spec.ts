@@ -19,7 +19,7 @@ const fetchArgs = {
         method: 'PROPFIND',
         headers: {
           Authorization:
-            'Basic ' + window.btoa(`${config.user}:${config.passwd}`),
+            'Basic ' + Buffer.from(`${config.user}:${config.passwd}`, 'base64'),
           'Content-Type': 'application/xml; charset="utf-8"',
           Depth: '1'
         }
@@ -34,7 +34,7 @@ const fetchArgs = {
         method: 'MKCOL',
         headers: {
           Authorization:
-            'Basic ' + window.btoa(`${config.user}:${config.passwd}`)
+            'Basic ' + Buffer.from(`${config.user}:${config.passwd}`, 'base64')
         }
       }
     ]
@@ -47,7 +47,7 @@ const fetchArgs = {
         method: 'PUT',
         headers: {
           Authorization:
-            'Basic ' + window.btoa(`${config.user}:${config.passwd}`)
+            'Basic ' + Buffer.from(`${config.user}:${config.passwd}`, 'base64'
         },
         body
       }
@@ -61,7 +61,7 @@ const fetchArgs = {
         method: 'GET',
         headers: {
           Authorization:
-            'Basic ' + window.btoa(`${config.user}:${config.passwd}`),
+            'Basic ' + Buffer.from(`${config.user}:${config.passwd}`, 'base64'),
           ...headers
         }
       }

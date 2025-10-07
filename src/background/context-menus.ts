@@ -13,7 +13,7 @@ import { combineLatest } from 'rxjs'
 import { concatMap, filter, distinctUntilChanged } from 'rxjs/operators'
 import { openPDF, extractPDFUrl } from './pdf-sniffer'
 import { copyTextToClipboard } from './clipboard-manager'
-import { BackgroundServer } from './server'
+import { SalaDictExtension, BackgroundServer } from './server'
 
 interface CreateMenuOptions {
   type?: browser.contextMenus.ItemType
@@ -97,9 +97,9 @@ export class ContextMenus {
     browser.tabs.query({ active: true, currentWindow: true }).then(tabs => {
       if (tabs.length > 0 && tabs[0].url) {
         const langCode =
-          window.appConfig.langCode === 'zh-CN'
+          SalaDictExtension.appConfig.langCode === 'zh-CN'
             ? 'zh'
-            : window.appConfig.langCode === 'zh-TW'
+            : SalaDictExtension.appConfig.langCode === 'zh-TW'
             ? 'cht'
             : 'en'
         openUrl(
@@ -114,7 +114,7 @@ export class ContextMenus {
   static openSogouPage() {
     browser.tabs.query({ active: true, currentWindow: true }).then(tabs => {
       if (tabs.length > 0 && tabs[0].url) {
-        const langCode = window.appConfig.langCode === 'zh-CN' ? 'zh-CHS' : 'en'
+        const langCode = SalaDictExtension.appConfig.langCode === 'zh-CN' ? 'zh-CHS' : 'en'
         openUrl(
           `https://translate.sogoucdn.com/pcvtsnapshot?from=auto&to=${langCode}&tfr=translatepc&url=${encodeURIComponent(
             tabs[0].url as string
@@ -128,9 +128,9 @@ export class ContextMenus {
     browser.tabs.query({ active: true, currentWindow: true }).then(tabs => {
       if (tabs.length > 0 && tabs[0].url) {
         const langCode =
-          window.appConfig.langCode === 'zh-CN'
+          SalaDictExtension.appConfig.langCode === 'zh-CN'
             ? 'zh-Hans'
-            : window.appConfig.langCode === 'zh-TW'
+            : SalaDictExtension.appConfig.langCode === 'zh-TW'
             ? 'zh-Hant'
             : 'en'
         openUrl(
@@ -200,7 +200,7 @@ export class ContextMenus {
         break
       default:
         {
-          const item = window.appConfig.contextMenus.all[menuItemId]
+          const item = SalaDictExtension.appConfig.contextMenus.all[menuItemId]
           if (item) {
             const url = typeof item === 'string' ? item : item.url
             if (url) {

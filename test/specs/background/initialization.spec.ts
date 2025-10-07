@@ -4,9 +4,10 @@ import getDefaultProfile from '@/app-config/profiles'
 import { timer } from '@/_helpers/promise-more'
 import '@/background/types'
 import { browser } from '../../helper'
+import { SalaDictExtension } from '@/background/server'
 
-window.appConfig = getDefaultConfig()
-window.activeProfile = getDefaultProfile()
+SalaDictExtension.appConfig = getDefaultConfig()
+SalaDictExtension.activeProfile = getDefaultProfile()
 
 window.fetch = jest.fn(() =>
   Promise.resolve({

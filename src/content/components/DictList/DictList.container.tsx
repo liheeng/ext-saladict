@@ -92,14 +92,15 @@ const mapDispatchToProps: MapDispatchToPropsFunction<
             .then(resolve)
         } else {
           // message.send({ type: 'PLAY_AUDIO', payload: src }).then(resolve)
-          console.debug('play audio (', src, ')');
-          AudioManager.getInstance().play(src)
-              .then((result) => {
-                  console.debug('play audio (', src, ') result: ', result);
-              })
-              .catch((error) => {
-                  console.error('play audio (', src, ') error: ', error);
-              });
+          console.debug('play audio (', src, ')')
+          AudioManager.getInstance()
+            .play(src)
+            .then(result => {
+              console.debug('play audio (', src, ') result: ', result)
+            })
+            .catch(error => {
+              console.error('play audio (', src, ') error: ', error)
+            })
         }
         dispatch({
           type: 'PLAY_AUDIO',

@@ -12,6 +12,7 @@ import searchStartEpic from './searchStart.epic'
 import newSelectionEpic from './newSelection.epic'
 import { translateCtxs, genCtxText } from '@/_helpers/translateCtx'
 import { message } from '@/_helpers/browser-api'
+import { AudioManager } from '@/_helpers/audio-manager'
 
 export const epics = combineEpics<StoreAction, StoreAction, StoreState>(
   /** Start searching text. This will also send to Redux. */
@@ -39,7 +40,8 @@ export const epics = combineEpics<StoreAction, StoreAction, StoreState>(
       pairwise(),
       mergeMap(([oldShow, newShow]) => {
         if (oldShow && !newShow) {
-          message.send({ type: 'STOP_AUDIO' })
+          // message.send({ type: 'STOP_AUDIO' })
+          AudioManager.getInstance().reset()
         }
         return EMPTY
       })

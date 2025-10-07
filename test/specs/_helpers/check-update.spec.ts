@@ -1,6 +1,7 @@
 import { checkUpdate } from '@/_helpers/check-update'
 import _fetchMock, { FetchMock } from 'jest-fetch-mock'
 import getDefaultConfig from '@/app-config'
+import { SalaDictExtension } from '@/background/server'
 
 const fetchMock = _fetchMock as FetchMock
 
@@ -11,7 +12,7 @@ describe('Check Update', () => {
 
   beforeEach(() => {
     fetchMock.resetMocks()
-    window.appConfig = getDefaultConfig()
+    SalaDictExtension.appConfig = getDefaultConfig()
   })
 
   const tests = [

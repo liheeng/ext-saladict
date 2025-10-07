@@ -3,7 +3,7 @@ import { Word } from '@/_helpers/record-manager'
 import { isFirefox } from '@/_helpers/saladict'
 import { getTitlebarOffset } from '@/_helpers/titlebar-offset'
 import { SalaDictExtension } from './server'
-import { getWindowPageInfo } from '@/_helpers/uitls'
+import { getWindowPageInfo } from '@/_helpers/window-page'
 
 interface WinRect {
   width: number
@@ -84,7 +84,8 @@ export class MainWindowsManager {
     const winPageInfo = await fetchWindowPageInfo()
 
     const sidebarWidth =
-      (sidebarSnapshot && sidebarSnapshot.width) || window.appConfig.panelWidth
+      (sidebarSnapshot && sidebarSnapshot.width) ||
+      SalaDictExtension.appConfig.panelWidth
 
     const updateInfo =
       mainWin.top != null &&
@@ -170,7 +171,7 @@ export class QsPanelManager {
         }
       }
     } else {
-      if (window.appConfig.qsPreload === 'selection') {
+      if (SalaDictExtension.appConfig.qsPreload === 'selection') {
         const tab = (
           await browser.tabs.query({
             active: true,
@@ -185,9 +186,9 @@ export class QsPanelManager {
 
     await this.mainWindowsManager.takeSnapshot()
 
-    const qsPanelRect = window.appConfig.qssaSidebar
-      ? await this.getSidebarRect(window.appConfig.qssaSidebar)
-      : (window.appConfig.qssaRectMemo && (await this.getStorageRect())) ||
+    const qsPanelRect = SalaDictExtension.appConfig.qssaSidebar
+      ? await this.getSidebarRect(SalaDictExtension.appConfig.qssaSidebar)
+      : (SalaDictExtension.appConfig.qssaRectMemo && (await this.getStorageRect())) ||
         this.getDefaultRect()
 
     let qsPanelWin: browser.windows.Window | undefined
@@ -197,7 +198,7 @@ export class QsPanelManager {
         ...qsPanelRect,
         type: 'popup',
         url: browser.runtime.getURL(
-          `quick-search.html?sidebar=${window.appConfig.qssaSidebar}${wordString}${lastTabString}`
+          `quick-search.html?sidebar=${SalaDictExtension.appConfig.qssaSidebar}${wordString}${lastTabString}`
         )
       })
     } catch (err) {
@@ -214,20 +215,20 @@ export class QsPanelManager {
     if (qsPanelWin && qsPanelWin.id) {
       if (isFirefox) {
         // Firefox needs an extra push
-        safeUpdateWindow(qsPanelWin.id, qsPanelRect)
+        safeUpdateWindow(qsPanelWin.id, await qsPanelRect)
       }
 
       this.qsPanelId = qsPanelWin.id
 
-      if (window.appConfig.qssaSidebar) {
+      if (SalaDictExtension.appConfig.qssaSidebar) {
         this.isSidebar = true
         await this.mainWindowsManager.makeRoomForSidebar(
-          window.appConfig.qssaSidebar,
+          SalaDictExtension.appConfig.qssaSidebar,
           qsPanelWin
         )
       }
 
-      if (!window.appConfig.qsFocus) {
+      if (!SalaDictExtension.appConfig.qsFocus) {
         await this.mainWindowsManager.focus()
       }
 
@@ -343,12 +344,12 @@ export class QsPanelManager {
   }
 
   async getDefaultRect(): Promise<WinRect> {
-    const { qsLocation, qssaHeight } = window.appConfig
+    const { qsLocation, qssaHeight } = SalaDictExtension.appConfig
 
     let qsPanelLeft = 10
     let qsPanelTop = 30
-    const qsPanelWidth = window.appConfig.panelWidth
-    const qsPanelHeight = window.appConfig.qssaHeight
+    const qsPanelWidth = SalaDictExtension.appConfig.panelWidth
+    const qsPanelHeight = SalaDictExtension.appConfig.qssaHeight
     const winPageInfo = await fetchWindowPageInfo()
 
     switch (qsLocation) {
@@ -414,7 +415,8 @@ export class QsPanelManager {
 
   async getSidebarRect(side: 'left' | 'right'): Promise<WinRect> {
     const panelWidth =
-      (this.snapshot && this.snapshot.width) || window.appConfig.panelWidth
+      (this.snapshot && this.snapshot.width) ||
+      SalaDictExtension.appConfig.panelWidth
     const mainWin = this.mainWindowsManager.snapshot
     const winPageInfo = await fetchWindowPageInfo()
 

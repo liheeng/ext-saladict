@@ -116,7 +116,8 @@ export class Service extends SyncService<SyncConfig, SyncMeta> {
         method: 'PROPFIND',
         headers: {
           Authorization:
-            'Basic ' + window.btoa(`${this.config.user}:${this.config.passwd}`),
+            'Basic ' +
+            Buffer.from(`${this.config.user}:${this.config.passwd}`, 'base64'),
           'Content-Type': 'application/xml; charset="utf-8"',
           Depth: '1'
         }
@@ -174,7 +175,8 @@ export class Service extends SyncService<SyncConfig, SyncMeta> {
         method: 'MKCOL',
         headers: {
           Authorization:
-            'Basic ' + window.btoa(`${this.config.user}:${this.config.passwd}`)
+            'Basic ' +
+            Buffer.from(`${this.config.user}:${this.config.passwd}`, 'base64')
         }
       })
       if (!response.ok) {
@@ -229,7 +231,8 @@ export class Service extends SyncService<SyncConfig, SyncMeta> {
         method: 'PUT',
         headers: {
           Authorization:
-            'Basic ' + window.btoa(`${this.config.user}:${this.config.passwd}`)
+            'Basic ' +
+            Buffer.from(`${this.config.user}:${this.config.passwd}`, 'base64')
         },
         body
       })
@@ -262,7 +265,8 @@ export class Service extends SyncService<SyncConfig, SyncMeta> {
     }
 
     const headers: { [name: string]: string } = {
-      Authorization: 'Basic ' + window.btoa(`${config.user}:${config.passwd}`)
+      Authorization:
+        'Basic ' + Buffer.from(`${config.user}:${config.passwd}`, 'base64')
     }
     if (!testConfig && !noCache && this.meta.etag != null) {
       headers['If-None-Match'] = this.meta.etag

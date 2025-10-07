@@ -352,7 +352,7 @@ export type MessageConfig = MessageConfigType<{
   }
 
   /** Send extension config to frontend. */
-  AIDICT_EXTENSION_CONFIG: {}
+  SALADICT_EXTENSION_CONFIG: {}
 
   /* ------------------------------------------------ *\
      Third-party Scripts

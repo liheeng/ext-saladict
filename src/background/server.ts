@@ -237,8 +237,8 @@ export class BackgroundServer {
     return openUrl({
       url: await engine.getSrcPage(
         text,
-        window.appConfig,
-        window.activeProfile
+        SalaDictExtension.appConfig,
+        SalaDictExtension.activeProfile
       ),
       active
     })
@@ -258,7 +258,7 @@ export class BackgroundServer {
 
       try {
         // response = await timeout(
-        //   search(data.text, window.appConfig, window.activeProfile, payload),
+        //   search(data.text, SalaDictExtension.appConfig, SalaDictExtension.activeProfile, payload),
         //   25000
         // )
         response = await timeout(
@@ -275,7 +275,7 @@ export class BackgroundServer {
           // retry once
           await timer(500)
           // response = await timeout(
-          //   search(data.text, window.appConfig, window.activeProfile, payload),
+          //   search(data.text, SalaDictExtension.appConfig, SalaDictExtension.activeProfile, payload),
           //   25000
           // )
           response = await timeout(

@@ -1,3 +1,5 @@
+import { SalaDictExtension } from '@/background/server'
+
 export interface ReleaseData {
   version: string
   data: string[]
@@ -25,7 +27,7 @@ export async function checkUpdate(
 ): Promise<ReleaseResponse> {
   if (!data) {
     try {
-      const isZh = window.appConfig.langCode.startsWith('zh')
+      const isZh = SalaDictExtension.appConfig.langCode.startsWith('zh')
       const response = await fetch(
         `https://saladict.crimx.com/releases/${isZh ? 'chs' : 'eng'}.json`
       )

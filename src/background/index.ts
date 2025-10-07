@@ -9,7 +9,7 @@ import { message } from '@/_helpers/browser-api'
 import { startSyncServiceInterval } from './sync-manager'
 import { init as initPdf } from './pdf-sniffer'
 import { ContextMenus } from './context-menus'
-import { BackgroundServer } from './server'
+import { SalaDictExtension, BackgroundServer } from './server'
 import { initBadge } from './badge'
 import { setupCaiyunTrsBackend } from './page-translate/caiyun'
 import { setupRequestGAListener } from '@/_helpers/analytics'
@@ -28,19 +28,19 @@ setupCaiyunTrsBackend()
 setupRequestGAListener()
 
 getConfig().then(async config => {
-  window.appConfig = config
+  SalaDictExtension.appConfig = config
   initPdf(config)
   initBadge()
 
   addConfigListener(({ newConfig }) => {
-    window.appConfig = newConfig
+    SalaDictExtension.appConfig = newConfig
   })
 })
 
 createActiveProfileStream().subscribe(profile => {
-  window.activeProfile = profile
+  SalaDictExtension.activeProfile = profile
 })
 
 createProfileIDListStream().subscribe(list => {
-  window.profileIDList = list
+  SalaDictExtension.profileIDList = list
 })

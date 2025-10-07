@@ -2,6 +2,7 @@ import { message } from '@/_helpers/browser-api'
 import { Subject } from 'rxjs'
 import { switchMapBy } from '@/_helpers/observables'
 import { timer } from '@/_helpers/promise-more'
+import { SalaDictExtension } from '@/background/server'
 
 interface UpdateBadgeOptions {
   active: boolean
@@ -33,7 +34,7 @@ onUpdated$
             type: 'GET_TAB_BADGE_INFO'
           })
           .catch(() => {})) || {
-          active: window.appConfig.active,
+          active: SalaDictExtension.appConfig.active,
           tempDisable: false,
           unsupported: true
         }
@@ -76,8 +77,9 @@ function setOff(tabId: number) {
   // browser.browserAction.setBadgeBackgroundColor({ color: '#E74C3C', tabId })
   // browser.browserAction.setBadgeText({ text: 'off', tabId })
   browser.browserAction.setTitle({
-    title: require('@/_locales/' + window.appConfig.langCode + '/background')
-      .locale.app.off,
+    title: require('@/_locales/' +
+      SalaDictExtension.appConfig.langCode +
+      '/background').locale.app.off,
     tabId
   })
 }
@@ -87,8 +89,9 @@ function setTempOff(tabId: number) {
   // browser.browserAction.setBadgeBackgroundColor({ color: '#F39C12', tabId })
   // browser.browserAction.setBadgeText({ text: 'off', tabId })
   browser.browserAction.setTitle({
-    title: require('@/_locales/' + window.appConfig.langCode + '/background')
-      .locale.app.tempOff,
+    title: require('@/_locales/' +
+      SalaDictExtension.appConfig.langCode +
+      '/background').locale.app.tempOff,
     tabId
   })
 }
@@ -96,8 +99,9 @@ function setTempOff(tabId: number) {
 function setUnsupported(tabId: number) {
   setIcon(true, tabId)
   browser.browserAction.setTitle({
-    title: require('@/_locales/' + window.appConfig.langCode + '/background')
-      .locale.app.unsupported,
+    title: require('@/_locales/' +
+      SalaDictExtension.appConfig.langCode +
+      '/background').locale.app.unsupported,
     tabId
   })
 }
