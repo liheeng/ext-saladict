@@ -156,6 +156,8 @@ module.exports = {
           ]
         ],
         plugins: [
+          '@babel/plugin-proposal-optional-chaining', // For optional chaining (?.)
+          '@babel/plugin-proposal-nullish-coalescing-operator', // For nullish coalescing (??)
           [
             'import',
             {

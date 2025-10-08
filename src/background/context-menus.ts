@@ -114,7 +114,8 @@ export class ContextMenus {
   static openSogouPage() {
     browser.tabs.query({ active: true, currentWindow: true }).then(tabs => {
       if (tabs.length > 0 && tabs[0].url) {
-        const langCode = SalaDictExtension.appConfig.langCode === 'zh-CN' ? 'zh-CHS' : 'en'
+        const langCode =
+          SalaDictExtension.appConfig.langCode === 'zh-CN' ? 'zh-CHS' : 'en'
         openUrl(
           `https://translate.sogoucdn.com/pcvtsnapshot?from=auto&to=${langCode}&tfr=translatepc&url=${encodeURIComponent(
             tabs[0].url as string

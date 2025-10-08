@@ -148,11 +148,13 @@ function onCommand(command: string) {
         )
         const offset = command === 'next-profile' ? 1 : -1
         const nextIndex =
-          curIndex < 0 ? 0 : (curIndex + offset) % SalaDictExtension.profileIDList.length
+          curIndex < 0
+            ? 0
+            : (curIndex + offset) % SalaDictExtension.profileIDList.length
 
-        updateActiveProfileID(SalaDictExtension.profileIDList[nextIndex].id).then(
-          searchTextBox
-        )
+        updateActiveProfileID(
+          SalaDictExtension.profileIDList[nextIndex].id
+        ).then(searchTextBox)
       }
       break
     case 'profile-1':

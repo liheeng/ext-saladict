@@ -1,5 +1,5 @@
 module.exports = {
-  manifest_version: 2,
+  manifest_version: 3,
 
   homepage_url: 'https://saladict.crimx.com/',
 
@@ -74,10 +74,17 @@ module.exports = {
     }
   },
 
+  // web_accessible_resources: [
+  //   'assets/*',
+  //   'audio-control.html',
+  //   'quick-search.html'
+  // ],
+
   web_accessible_resources: [
-    'assets/*',
-    'audio-control.html',
-    'quick-search.html'
+    {
+      resources: ['assets/*', 'audio-control.html', 'quick-search.html'],
+      matches: ['<all_urls>']
+    }
   ],
 
   permissions: [
@@ -93,7 +100,9 @@ module.exports = {
     'webRequestBlocking'
   ],
 
+  host_permissions: ['<all_urls>'],
+
   optional_permissions: ['clipboardRead', 'clipboardWrite'],
 
-  content_security_policy: "script-src 'self'; object-src 'self'"
+  content_security_policy: "script-src 'self'; object-src 'self';"
 }

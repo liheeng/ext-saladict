@@ -7,7 +7,7 @@ const fetchMock = _fetchMock as FetchMock
 
 describe('Check Update', () => {
   beforeAll(() => {
-    window.fetch = fetchMock
+    window.fetch = fetchMock as any
   })
 
   beforeEach(() => {
