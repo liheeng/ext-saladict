@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import { getStaticSpeaker } from '@/components/Speaker'
 import { DictConfigs } from '@/app-config'
 import {
@@ -15,6 +15,7 @@ import {
   externalLink,
   getChsToChz
 } from '../helpers'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = async (text, config, profile) => {
   let { lang } = profile.dicts.all.cambridge.options
@@ -68,17 +69,50 @@ type CambridgeResultItem = {
 
 export type CambridgeResult = CambridgeResultItem[]
 
-type CambridgeSearchResult = DictSearchResult<CambridgeResult>
+export type CambridgeSearchResult = DictSearchResult<CambridgeResult>
 
-export const search: SearchFunction<CambridgeResult> = async (
+// export const search: SearchFunction<CambridgeResult> = async (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   return fetchDirtyDOM(await getSrcPage(text, config, profile))
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, profile.dicts.all.cambridge.options))
+// }
+
+export interface _CambridgeSearchResult<T> {
+  data: T
+  options: DictConfigs['cambridge']['options']
+}
+
+export const search: SearchFunction<_CambridgeSearchResult<string>> = async (
   text,
   config,
   profile,
   payload
 ) => {
-  return fetchDirtyDOM(await getSrcPage(text, config, profile))
+  return fetchPlainText(await getSrcPage(text, config, profile))
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, profile.dicts.all.cambridge.options))
+    .then(data => {
+      // return AsCambridgeDictSearchResult(
+      //   data,
+      //   profile.dicts.all.cambridge.options
+      // )
+      return {
+        result: {
+          data: data,
+          options: profile.dicts.all.cambridge.options
+        } as _CambridgeSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _CambridgeSearchResult<string>
+): Promise<CambridgeSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.options)
 }
 
 function handleDOM(

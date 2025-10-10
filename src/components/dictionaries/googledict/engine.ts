@@ -26,9 +26,13 @@ export interface GoogleDictResult {
   styles: string[]
 }
 
-type GoogleDictSearchResult = DictSearchResult<GoogleDictResult>
+export type GoogleDictSearchResult = DictSearchResult<GoogleDictResult>
 
-export const search: SearchFunction<GoogleDictResult> = async (
+export interface _GoogleDictSearchResult<T> {
+  text: string
+  data: T
+}
+export const search: SearchFunction<_GoogleDictSearchResult<string>> = async (
   text,
   config,
   profile,
@@ -47,125 +51,144 @@ export const search: SearchFunction<GoogleDictResult> = async (
       `https://www.google.com/search?hl=en&safe=off&${isen}q=meaning:${encodedText}`
     )
       .catch(handleNetWorkError)
-      .then(handleDOM)
+      .then(doc => {
+        return {
+          result: {
+            text: text,
+            data: doc
+          } as _GoogleDictSearchResult<string>
+        }
+      })
   } catch (e) {
     return await fetchPlainText(
       `https://www.google.com/search?hl=en&safe=off&${isen}q=define:${encodedText}`
     )
       .catch(handleNetWorkError)
-      .then(handleDOM)
+      .then(doc => {
+        return {
+          result: {
+            text: text,
+            data: doc
+          } as _GoogleDictSearchResult<string>
+        }
+      })
   }
+}
 
-  function handleDOM(
-    bodyText: string
-  ): GoogleDictSearchResult | Promise<GoogleDictSearchResult> {
-    const doc = new DOMParser().parseFromString(bodyText, 'text/html')
+export async function parseSearchResult(
+  result: _GoogleDictSearchResult<string>
+): Promise<GoogleDictSearchResult> {
+  return handleDOM(result.text, result.data)
+}
 
-    // mend fragments
-    extFragements(bodyText).forEach(({ id, innerHTML }) => {
+function handleDOM(
+  text: string,
+  bodyText: string
+): GoogleDictSearchResult | Promise<GoogleDictSearchResult> {
+  const doc = new DOMParser().parseFromString(bodyText, 'text/html')
+
+  // mend fragments
+  extFragements(bodyText).forEach(({ id, innerHTML }) => {
+    try {
+      const el = doc.querySelector(`#${id}`)
+      if (el) {
+        el.innerHTML = innerHTML
+      }
+    } catch (e) {
+      // ignore
+    }
+  })
+
+  const $obcontainer = doc.querySelector('.lr_container')
+  if ($obcontainer) {
+    $obcontainer.querySelectorAll<HTMLDivElement>('.vkc_np').forEach($block => {
+      if (
+        $block.querySelector('.zbA8Me') || // Dictionary title
+        $block.querySelector('#dw-siw') || // Search box
+        $block.querySelector('#tl_select') // Translate to
+      ) {
+        $block.remove()
+      }
+    })
+
+    removeChildren($obcontainer, '.lr_dct_trns_h') // other Translate to blocks
+    removeChildren($obcontainer, '.S5TwIf') // Learn to pronounce
+    removeChildren($obcontainer, '.VZVCid') // From Oxford
+    removeChildren($obcontainer, '.u7XA4b') // footer
+    removeChild($obcontainer, '[jsname=L4Nn5e]') // remove translate to
+
+    // tts
+    $obcontainer.querySelectorAll('audio').forEach($audio => {
+      const $source = $audio.querySelector('source')
+
+      let src =
+        $source && getFullLink('https://ssl.gstatic.com', $source, 'src')
+
+      if (!src) {
+        src =
+          'https://www.google.com/speech-api/v1/synthesize?enc=mpeg&lang=zh-cn&speed=0.4&client=lr-language-tts&use_google_only_voices=1&text=' +
+          encodeURIComponent(text)
+      }
+
+      $audio.replaceWith(getStaticSpeaker(src))
+    })
+
+    $obcontainer
+      .querySelectorAll('[role=listitem] > [jsname=F457ec]')
+      .forEach($word => {
+        // let saladict jump into the words
+        const $a = document.createElement('a')
+        $a.textContent = getText($word)
+        Array.from($word.childNodes).forEach($child => {
+          $child.remove()
+        })
+        $word.appendChild($a)
+        // always appeared available
+        $word.removeAttribute('style')
+        $word.classList.add('MR2UAc')
+        $word.classList.add('I6a0ee')
+        $word.classList.remove('cO53qb')
+      })
+
+    $obcontainer.querySelectorAll('g-img > img').forEach($img => {
+      const src = $img.getAttribute('title')
+      if (src) {
+        $img.setAttribute('src', src)
+      }
+    })
+
+    extractImg(bodyText).forEach(({ id, src }) => {
       try {
-        const el = doc.querySelector(`#${id}`)
+        const el = $obcontainer.querySelector(`#${id}`)
         if (el) {
-          el.innerHTML = innerHTML
+          el.setAttribute('src', src)
         }
       } catch (e) {
         // ignore
       }
     })
 
-    const $obcontainer = doc.querySelector('.lr_container')
-    if ($obcontainer) {
-      $obcontainer
-        .querySelectorAll<HTMLDivElement>('.vkc_np')
-        .forEach($block => {
-          if (
-            $block.querySelector('.zbA8Me') || // Dictionary title
-            $block.querySelector('#dw-siw') || // Search box
-            $block.querySelector('#tl_select') // Translate to
-          ) {
-            $block.remove()
-          }
-        })
+    const cleanText = getInnerHTML('https://www.google.com', $obcontainer, {
+      config: {
+        ADD_TAGS: ['g-img'],
+        ADD_ATTR: ['jsname', 'jsaction']
+      }
+    })
+      .replace(/synonyms:/g, 'syn:')
+      .replace(/antonyms:/g, 'ant:')
 
-      removeChildren($obcontainer, '.lr_dct_trns_h') // other Translate to blocks
-      removeChildren($obcontainer, '.S5TwIf') // Learn to pronounce
-      removeChildren($obcontainer, '.VZVCid') // From Oxford
-      removeChildren($obcontainer, '.u7XA4b') // footer
-      removeChild($obcontainer, '[jsname=L4Nn5e]') // remove translate to
+    const styles: string[] = []
+    doc.querySelectorAll('style').forEach($style => {
+      const textContent = getText($style)
+      if (textContent && /\.xpdxpnd|\.lr_container/.test(textContent)) {
+        styles.push(textContent)
+      }
+    })
 
-      // tts
-      $obcontainer.querySelectorAll('audio').forEach($audio => {
-        const $source = $audio.querySelector('source')
-
-        let src =
-          $source && getFullLink('https://ssl.gstatic.com', $source, 'src')
-
-        if (!src) {
-          src =
-            'https://www.google.com/speech-api/v1/synthesize?enc=mpeg&lang=zh-cn&speed=0.4&client=lr-language-tts&use_google_only_voices=1&text=' +
-            encodeURIComponent(text)
-        }
-
-        $audio.replaceWith(getStaticSpeaker(src))
-      })
-
-      $obcontainer
-        .querySelectorAll('[role=listitem] > [jsname=F457ec]')
-        .forEach($word => {
-          // let saladict jump into the words
-          const $a = document.createElement('a')
-          $a.textContent = getText($word)
-          Array.from($word.childNodes).forEach($child => {
-            $child.remove()
-          })
-          $word.appendChild($a)
-          // always appeared available
-          $word.removeAttribute('style')
-          $word.classList.add('MR2UAc')
-          $word.classList.add('I6a0ee')
-          $word.classList.remove('cO53qb')
-        })
-
-      $obcontainer.querySelectorAll('g-img > img').forEach($img => {
-        const src = $img.getAttribute('title')
-        if (src) {
-          $img.setAttribute('src', src)
-        }
-      })
-
-      extractImg(bodyText).forEach(({ id, src }) => {
-        try {
-          const el = $obcontainer.querySelector(`#${id}`)
-          if (el) {
-            el.setAttribute('src', src)
-          }
-        } catch (e) {
-          // ignore
-        }
-      })
-
-      const cleanText = getInnerHTML('https://www.google.com', $obcontainer, {
-        config: {
-          ADD_TAGS: ['g-img'],
-          ADD_ATTR: ['jsname', 'jsaction']
-        }
-      })
-        .replace(/synonyms:/g, 'syn:')
-        .replace(/antonyms:/g, 'ant:')
-
-      const styles: string[] = []
-      doc.querySelectorAll('style').forEach($style => {
-        const textContent = getText($style)
-        if (textContent && /\.xpdxpnd|\.lr_container/.test(textContent)) {
-          styles.push(textContent)
-        }
-      })
-
-      return { result: { entry: cleanText, styles } }
-    }
-
-    return handleNoResult<GoogleDictSearchResult>()
+    return { result: { entry: cleanText, styles } }
   }
+
+  return handleNoResult<GoogleDictSearchResult>()
 }
 
 function extFragements(text: string): Array<{ id: string; innerHTML: string }> {

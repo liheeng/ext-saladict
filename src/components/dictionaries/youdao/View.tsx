@@ -1,13 +1,40 @@
 import React, { FC, useState } from 'react'
 import Speaker from '@/components/Speaker'
 import StarRates from '@/components/StarRates'
-import { YoudaoResult } from './engine'
+import {
+  _YoudaoSearchResult,
+  YoudaoSearchResult,
+  parseSearchResultString
+} from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import EntryBox from '@/components/EntryBox'
 import { StrElm } from '@/components/StrElm'
 
-export const DictYoudao: FC<ViewPorps<YoudaoResult>> = ({ result }) => {
+export const DictYoudao: FC<ViewPorps<_YoudaoSearchResult<string>>> = props => {
   const [collinsEntry, setCollinsEntry] = useState<string | number>(0)
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<YoudaoSearchResult | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResultString(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value as YoudaoSearchResult)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result = parsedResult.result
 
   if (result.type === 'related') {
     return <StrElm className="dictYoudao-Related" html={result.list} />

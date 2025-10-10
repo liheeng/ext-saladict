@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getInnerHTML,
@@ -11,6 +11,7 @@ import {
   DictSearchResult
 } from '../helpers'
 import { DictConfigs } from '@/app-config'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return (
@@ -41,20 +42,52 @@ export interface CNKIResult {
   // }
 }
 
-type CNKISearchResult = DictSearchResult<CNKIResult>
+export type CNKISearchResult = DictSearchResult<CNKIResult>
 
-export const search: SearchFunction<CNKIResult> = (
+export interface _CNKISearchResult<T> {
+  data: T
+  options: DictConfigs['cnki']['options']
+}
+
+// export const search: SearchFunction<CNKIResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   return fetchDirtyDOM(
+//     'http://dict.cnki.net/old/dict_result.aspx?scw=' + encodeURIComponent(text),
+//     { withCredentials: false }
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, profile.dicts.all.cnki.options))
+// }
+
+export const search: SearchFunction<_CNKISearchResult<string>> = (
   text,
   config,
   profile,
   payload
 ) => {
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'http://dict.cnki.net/old/dict_result.aspx?scw=' + encodeURIComponent(text),
     { withCredentials: false }
   )
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, profile.dicts.all.cnki.options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options: profile.dicts.all.cnki.options
+        } as _CNKISearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _CNKISearchResult<string>
+): Promise<CNKISearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.options)
 }
 
 function handleDOM(

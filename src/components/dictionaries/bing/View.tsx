@@ -1,15 +1,53 @@
 import React, { FC } from 'react'
 import Speaker from '@/components/Speaker'
 import {
-  BingResult,
+  BingSearchResult,
   BingResultLex,
   BingResultMachine,
-  BingResultRelated
+  BingResultRelated,
+  _BingSearchResult,
+  parseSearchResult
 } from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { StrElm } from '@/components/StrElm'
 
-export const DictBing: FC<ViewPorps<BingResult>> = ({ result }) => {
+// export const DictBing: FC<ViewPorps<BingResult>> = ({ result }) => {
+//   switch (result.type) {
+//     case 'lex':
+//       return renderLex(result)
+//     case 'machine':
+//       return renderMachine(result)
+//     case 'related':
+//       return renderRelated(result)
+//     default:
+//       return null
+//   }
+// }
+
+export const DictBing: FC<ViewPorps<_BingSearchResult<string>>> = props => {
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<BingSearchResult | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result = parsedResult.result
   switch (result.type) {
     case 'lex':
       return renderLex(result)

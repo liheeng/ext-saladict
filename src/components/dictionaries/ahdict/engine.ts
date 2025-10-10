@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getText,
@@ -9,6 +9,7 @@ import {
   GetSrcPageFunction,
   DictSearchResult
 } from '../helpers'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://ahdictionary.com/word/search.html?q=${text}`
@@ -37,9 +38,30 @@ interface AhdictResultItem {
 
 export type AhdictResult = AhdictResultItem[]
 
-type AhdictSearchResult = DictSearchResult<AhdictResult>
+export type AhdictSearchResult = DictSearchResult<AhdictResult>
 
-export const search: SearchFunction<AhdictResult> = (
+// export const search: SearchFunction<AhdictResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const options = profile.dicts.all.ahdict.options
+
+//   return fetchDirtyDOM(
+//     'https://ahdictionary.com/word/search.html?q=' +
+//       encodeURIComponent(text.replace(/\s+/g, ' '))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, options))
+// }
+
+export interface _AhdictSearchResult<T> {
+  data: T
+  options: { resultnum: number }
+}
+
+export const search: SearchFunction<_AhdictSearchResult<string>> = (
   text,
   config,
   profile,
@@ -47,12 +69,25 @@ export const search: SearchFunction<AhdictResult> = (
 ) => {
   const options = profile.dicts.all.ahdict.options
 
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'https://ahdictionary.com/word/search.html?q=' +
       encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, options))
+    .then(data => {
+      return {
+        result: {
+          data: data,
+          options: options
+        } as _AhdictSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _AhdictSearchResult<string>
+): Promise<AhdictSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.options)
 }
 
 function handleDOM(

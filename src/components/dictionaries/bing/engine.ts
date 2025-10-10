@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   handleNoResult,
   handleNetWorkError,
@@ -10,6 +10,7 @@ import {
   getChsToChz
 } from '../helpers'
 import { DictConfigs } from '@/app-config'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text =>
   'https://cn.bing.com/dict/search?q=' +
@@ -77,7 +78,19 @@ type BingSearchResultLex = DictSearchResult<BingResultLex>
 type BingSearchResultMachine = DictSearchResult<BingResultMachine>
 type BingSearchResultRelated = DictSearchResult<BingResultRelated>
 
-export const search: SearchFunction<BingResult> = (
+export type BingSearchResult =
+  | BingSearchResultLex
+  | BingSearchResultMachine
+  | BingSearchResultRelated
+  | DictSearchResult<BingResult>
+
+export interface _BingSearchResult<T> {
+  data: T
+  bingConfig: BingConfig
+  transform: null | ((text: string) => string)
+}
+
+export const search: SearchFunction<_BingSearchResult<string>> = (
   text,
   config,
   profile,
@@ -85,29 +98,64 @@ export const search: SearchFunction<BingResult> = (
 ) => {
   const bingConfig = profile.dicts.all.bing
 
-  return fetchDirtyDOM(
+  // return fetchDirtyDOM(
+  //   DICT_LINK + encodeURIComponent(text.replace(/\s+/g, ' '))
+  // )
+  //   .catch(handleNetWorkError)
+  //   .then(async doc => {
+  //     const transform = await getChsToChz(config.langCode)
+
+  //     if (doc.querySelector('.client_def_hd_hd')) {
+  //       return handleLexResult(doc, bingConfig.options, transform)
+  //     }
+
+  //     if (doc.querySelector('.client_trans_head')) {
+  //       return handleMachineResult(doc, transform)
+  //     }
+
+  //     if (bingConfig.options.related) {
+  //       if (doc.querySelector('.client_do_you_mean_title_bar')) {
+  //         return handleRelatedResult(doc, bingConfig, transform)
+  //       }
+  //     }
+
+  //     return handleNoResult<DictSearchResult<BingResult>>()
+  //   })
+
+  return fetchPlainText(
     DICT_LINK + encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(async doc => {
-      const transform = await getChsToChz(config.langCode)
-
-      if (doc.querySelector('.client_def_hd_hd')) {
-        return handleLexResult(doc, bingConfig.options, transform)
+    .then(async data => {
+      return {
+        result: {
+          data: data,
+          bingConfig: bingConfig,
+          transform: await getChsToChz(config.langCode)
+        } as _BingSearchResult<string>
       }
-
-      if (doc.querySelector('.client_trans_head')) {
-        return handleMachineResult(doc, transform)
-      }
-
-      if (bingConfig.options.related) {
-        if (doc.querySelector('.client_do_you_mean_title_bar')) {
-          return handleRelatedResult(doc, bingConfig, transform)
-        }
-      }
-
-      return handleNoResult<DictSearchResult<BingResult>>()
     })
+}
+
+export async function parseSearchResult(
+  result: _BingSearchResult<string>
+): Promise<BingSearchResult> {
+  const doc = parseDomFromPlainHtml(result.data)
+  if (doc.querySelector('.client_def_hd_hd')) {
+    return handleLexResult(doc, result.bingConfig.options, result.transform)
+  }
+
+  if (doc.querySelector('.client_trans_head')) {
+    return handleMachineResult(doc, result.transform)
+  }
+
+  if (result.bingConfig.options.related) {
+    if (doc.querySelector('.client_do_you_mean_title_bar')) {
+      return handleRelatedResult(doc, result.bingConfig, result.transform)
+    }
+  }
+
+  return handleNoResult<DictSearchResult<BingResult>>()
 }
 
 function handleLexResult(

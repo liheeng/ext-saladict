@@ -1,16 +1,47 @@
 import React, { FC } from 'react'
-import { GoogleDictResult } from './engine'
+import {
+  GoogleDictSearchResult,
+  _GoogleDictSearchResult,
+  parseSearchResult
+} from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { StrElm } from '@/components/StrElm'
 
-export const DictGoogleDict: FC<ViewPorps<GoogleDictResult>> = ({ result }) => (
-  <div>
-    {result.styles.map((style, i) => (
-      <style key={i}>{style}</style>
-    ))}
-    <StrElm onClick={onEntryClick} className="xpdopen" html={result.entry} />
-  </div>
-)
+export const DictGoogleDict: FC<ViewPorps<
+  _GoogleDictSearchResult<string>
+>> = props => {
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<GoogleDictSearchResult | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result: any = parsedResult.result
+  return (
+    <div>
+      {result.styles.map((style, i) => (
+        <style key={i}>{style}</style>
+      ))}
+      <StrElm onClick={onEntryClick} className="xpdopen" html={result.entry} />
+    </div>
+  )
+}
 
 function onEntryClick(e: React.MouseEvent) {
   for (

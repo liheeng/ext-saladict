@@ -1,5 +1,5 @@
 import { AppConfig } from '@/app-config'
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getInnerHTML,
@@ -12,6 +12,7 @@ import {
   getChsToChz
 } from '../helpers'
 import { getStaticSpeaker } from '@/components/Speaker'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return (
@@ -46,7 +47,42 @@ export interface COBUILDColResult {
 
 export type COBUILDResult = COBUILDCibaResult | COBUILDColResult
 
-export const search: SearchFunction<COBUILDResult> = async (
+export interface _COBUILDSearchResult<T> {
+  data: T
+  // options: DictConfigs['cobuild']['options']
+  config: AppConfig
+}
+// export const search: SearchFunction<COBUILDResult> = async (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   text = encodeURIComponent(text.replace(/\s+/g, '-'))
+//   const { options } = profile.dicts.all.cobuild
+//   const sources: string[] = [
+//     'https://www.collinsdictionary.com/dictionary/english/',
+//     'https://www.collinsdictionary.com/zh/dictionary/english/'
+//   ]
+
+//   if (options.cibaFirst) {
+//     sources.reverse()
+//   }
+
+//   try {
+//     return handleDOM(await fetchDirtyDOM(sources[0] + text), config)
+//   } catch (e) {
+//     let doc: Document
+//     try {
+//       doc = await fetchDirtyDOM(sources[1] + text)
+//     } catch (e) {
+//       return handleNetWorkError()
+//     }
+//     return handleDOM(doc, config)
+//   }
+// }
+
+export const search: SearchFunction<_COBUILDSearchResult<string>> = async (
   text,
   config,
   profile,
@@ -63,19 +99,30 @@ export const search: SearchFunction<COBUILDResult> = async (
     sources.reverse()
   }
 
+  let doc: string
   try {
-    return handleDOM(await fetchDirtyDOM(sources[0] + text), config)
+    doc = await fetchPlainText(sources[0] + text, config as any)
   } catch (e) {
-    let doc: Document
     try {
-      doc = await fetchDirtyDOM(sources[1] + text)
+      doc = await fetchPlainText(sources[1] + text)
     } catch (e) {
       return handleNetWorkError()
     }
-    return handleDOM(doc, config)
+  }
+
+  return {
+    result: {
+      data: doc,
+      config: config
+    }
   }
 }
 
+export async function parseSearchResult(
+  result: _COBUILDSearchResult<string>
+): Promise<DictSearchResult<COBUILDResult>> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.config)
+}
 async function handleDOM(
   doc: Document,
   config: AppConfig

@@ -7,3 +7,7 @@ export function isTagName(node: Node, tagName: string): boolean {
     tagName.toLowerCase()
   )
 }
+
+export function parseDomFromPlainHtml(plainHtml: string): Document {
+  return new DOMParser().parseFromString(plainHtml, 'text/html')
+}

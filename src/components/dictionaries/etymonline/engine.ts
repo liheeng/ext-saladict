@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import { DictConfigs } from '@/app-config'
 import {
   getText,
@@ -11,6 +11,7 @@ import {
   GetSrcPageFunction,
   DictSearchResult
 } from '../helpers'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `http://www.etymonline.com/search?q=${text}`
@@ -28,9 +29,30 @@ type EtymonlineResultItem = {
 
 export type EtymonlineResult = EtymonlineResultItem[]
 
-type EtymonlineSearchResult = DictSearchResult<EtymonlineResult>
+export type EtymonlineSearchResult = DictSearchResult<EtymonlineResult>
 
-export const search: SearchFunction<EtymonlineResult> = (
+export interface _EtymonlineSearchResult<T> {
+  data: T
+  options?: DictConfigs['etymonline']['options']
+}
+
+// export const search: SearchFunction<EtymonlineResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const options = profile.dicts.all.etymonline.options
+//   text = encodeURIComponent(text.replace(/\s+/g, ' '))
+
+//   // http to bypass the referer checking
+//   return fetchDirtyDOM('https://www.etymonline.com/word/' + text)
+//     .catch(() => fetchDirtyDOM('https://www.etymonline.com/search?q=' + text))
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, options))
+// }
+
+export const search: SearchFunction<_EtymonlineSearchResult<string>> = (
   text,
   config,
   profile,
@@ -40,10 +62,26 @@ export const search: SearchFunction<EtymonlineResult> = (
   text = encodeURIComponent(text.replace(/\s+/g, ' '))
 
   // http to bypass the referer checking
-  return fetchDirtyDOM('https://www.etymonline.com/word/' + text)
-    .catch(() => fetchDirtyDOM('https://www.etymonline.com/search?q=' + text))
+  return fetchPlainText('https://www.etymonline.com/word/' + text)
+    .catch(() => fetchPlainText('https://www.etymonline.com/search?q=' + text))
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options: options
+        } as _EtymonlineSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _EtymonlineSearchResult<string>
+): Promise<EtymonlineSearchResult> {
+  return handleDOM(
+    parseDomFromPlainHtml(result.data),
+    result.options || { resultnum: 3, chart: true }
+  )
 }
 
 function handleDOM(

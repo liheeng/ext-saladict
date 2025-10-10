@@ -1,11 +1,41 @@
 import React, { FC, useState } from 'react'
 import { Speaker } from '@/components/Speaker'
 import StarRates from '@/components/StarRates'
-import { COBUILDResult, COBUILDCibaResult, COBUILDColResult } from './engine'
-import { ViewPorps } from '@/components/dictionaries/helpers'
+import {
+  COBUILDResult,
+  COBUILDCibaResult,
+  COBUILDColResult,
+  _COBUILDSearchResult,
+  parseSearchResult
+} from './engine'
+import { ViewPorps, DictSearchResult } from '@/components/dictionaries/helpers'
 import { StrElm } from '@/components/StrElm'
 
-export const DictCOBUILD: FC<ViewPorps<COBUILDResult>> = ({ result }) => {
+export const DictCOBUILD: FC<ViewPorps<
+  _COBUILDSearchResult<string>
+>> = props => {
+  const [parsedResult, setParsedResult] = React.useState<DictSearchResult<
+    COBUILDResult
+  > | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result: COBUILDResult = parsedResult.result
   switch (result.type) {
     case 'ciba':
       return renderCiba(result)

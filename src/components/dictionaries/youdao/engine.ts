@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   getText,
   getInnerHTML,
@@ -12,6 +12,7 @@ import {
   removeChild
 } from '../helpers'
 import { DictConfigs } from '@/app-config'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text =>
   'https://dict.youdao.com/w/' + encodeURIComponent(text.replace(/\s+/g, ' '))
@@ -45,9 +46,31 @@ export interface YoudaoResultRelated {
 
 export type YoudaoResult = YoudaoResultLex | YoudaoResultRelated
 
-type YoudaoSearchResult = DictSearchResult<YoudaoResult>
+export type YoudaoSearchResult = DictSearchResult<YoudaoResult>
 
-export const search: SearchFunction<YoudaoResult> = async (
+// export const search: SearchFunction<YoudaoResult> = async (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const options = profile.dicts.all.youdao.options
+//   const transform = await getChsToChz(config.langCode)
+
+//   return fetchDirtyDOM(
+//     'https://dict.youdao.com/w/' + encodeURIComponent(text.replace(/\s+/g, ' '))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => checkResult(doc, options, transform))
+// }
+
+export interface _YoudaoSearchResult<T> {
+  data: T
+  options: any
+  transform: any
+}
+
+export const search: SearchFunction<_YoudaoSearchResult<string>> = async (
   text,
   config,
   profile,
@@ -55,12 +78,29 @@ export const search: SearchFunction<YoudaoResult> = async (
 ) => {
   const options = profile.dicts.all.youdao.options
   const transform = await getChsToChz(config.langCode)
-
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'https://dict.youdao.com/w/' + encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(doc => checkResult(doc, options, transform))
+    .then(data => {
+      return {
+        result: {
+          data: data,
+          options: options,
+          transform: transform
+        } as _YoudaoSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResultString(
+  result: _YoudaoSearchResult<string>
+): Promise<YoudaoSearchResult> {
+  return checkResult(
+    parseDomFromPlainHtml(result.data),
+    result.options,
+    result.transform
+  )
 }
 
 function checkResult(

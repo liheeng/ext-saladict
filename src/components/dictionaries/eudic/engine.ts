@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchDirtyDOM, fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   getText,
   handleNoResult,
@@ -7,7 +7,8 @@ import {
   GetSrcPageFunction,
   DictSearchResult
 } from '../helpers'
-
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
+import { DictConfigs } from '@/app-config'
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://dict.eudic.net/dicts/en/${text}`
 }
@@ -21,9 +22,36 @@ interface EudicResultItem {
 
 export type EudicResult = EudicResultItem[]
 
-type EudicSearchResult = DictSearchResult<EudicResult>
+export type EudicSearchResult = DictSearchResult<EudicResult>
 
-export const search: SearchFunction<EudicResult> = (
+export interface _EudicSearchResult<T> extends DictSearchResult<T> {
+  data: T
+  options: DictConfigs['etymonline']['options']
+}
+
+// export const search: SearchFunction<EudicResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   text = encodeURIComponent(
+//     text
+//       .split(/\s+/)
+//       .slice(0, 2)
+//       .join(' ')
+//   )
+//   const options = profile.dicts.all.eudic.options
+
+//   return fetchDirtyDOM('https://dict.eudic.net/dicts/en/' + text, {
+//     withCredentials: false
+//   })
+//     .catch(handleNetWorkError)
+//     .then(validator)
+//     .then(doc => handleDOM(doc, options))
+// }
+
+export const search: SearchFunction<_EudicSearchResult<string>> = (
   text,
   config,
   profile,
@@ -37,12 +65,30 @@ export const search: SearchFunction<EudicResult> = (
   )
   const options = profile.dicts.all.eudic.options
 
-  return fetchDirtyDOM('https://dict.eudic.net/dicts/en/' + text, {
+  return fetchPlainText('https://dict.eudic.net/dicts/en/' + text, {
     withCredentials: false
   })
     .catch(handleNetWorkError)
-    .then(validator)
-    .then(doc => handleDOM(doc, options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options: options
+        } as _EudicSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _EudicSearchResult<string>
+): Promise<DictSearchResult<EudicResult>> {
+  // FIXME[Henry, 2025-10-10]: may need to call fetchDirtyDOM again in validator in page thread rather than worker thread,
+  // potential performance issue will be introduced for current page refresh.
+  return Promise.resolve(validator(parseDomFromPlainHtml(result.data))).then(
+    doc => {
+      return handleDOM(doc, result.options)
+    }
+  )
 }
 
 function handleDOM(
