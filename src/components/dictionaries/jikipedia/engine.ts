@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getText,
@@ -10,6 +10,8 @@ import {
   DictSearchResult,
   getFullLink
 } from '../helpers'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
+import { DictConfigs } from '@/app-config'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://jikipedia.com/search?phrase=${encodeURIComponent(text)}`
@@ -30,9 +32,13 @@ interface JikipediaResultItem {
 
 export type JikipediaResult = JikipediaResultItem[]
 
-type JikipediaSearchResult = DictSearchResult<JikipediaResult>
+export type JikipediaSearchResult = DictSearchResult<JikipediaResult>
 
-export const search: SearchFunction<JikipediaResult> = (
+export interface _JikipediaSearchResult<T> {
+  data: T
+  options: DictConfigs['jikipedia']['options']
+}
+export const search: SearchFunction<_JikipediaSearchResult<string>> = (
   text,
   config,
   profile,
@@ -40,11 +46,24 @@ export const search: SearchFunction<JikipediaResult> = (
 ) => {
   const options = profile.dicts.all.jikipedia.options
 
-  return fetchDirtyDOM(
+  return fetchPlainText(
     `https://jikipedia.com/search?phrase=${encodeURIComponent(text)}`
   )
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options
+        }
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _JikipediaSearchResult<string>
+): Promise<JikipediaSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.options)
 }
 
 function handleDOM(

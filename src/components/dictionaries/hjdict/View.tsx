@@ -1,15 +1,48 @@
 import React, { FC } from 'react'
-import { HjdictResult, HjdictResultLex, HjdictResultRelated } from './engine'
+import {
+  HjdictResult,
+  HjdictResultLex,
+  HjdictResultRelated,
+  HjdictSearchResult,
+  _HjdictSearchResult,
+  parseSearchResult
+} from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { useTranslate } from '@/_helpers/i18n'
 import { StrElm } from '@/components/StrElm'
 
-export const DictHjDict: FC<ViewPorps<HjdictResult>> = props =>
-  props.result.type === 'lex' ? (
-    <Lex {...props} />
-  ) : props.result.type === 'related' ? (
-    <Related {...props} />
-  ) : null
+export const DictHjDict: FC<ViewPorps<_HjdictSearchResult<string>>> = props => {
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<HjdictSearchResult | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result: any = parsedResult.result
+  if (result.type === 'lex') {
+    return <Lex {...result} />
+  } else if (result.type === 'related') {
+    return <Related {...result} />
+  } else {
+    return null
+  }
+}
 
 export default DictHjDict
 

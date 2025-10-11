@@ -18,7 +18,8 @@ import {
 import { DictConfigs } from '@/app-config'
 import { Profile } from '@/app-config/profiles'
 import { getStaticSpeaker } from '@/components/Speaker'
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = (text, config, profile) => {
   return `https://www.hjdict.com/${getLangCode(
@@ -44,18 +45,66 @@ export interface HjdictResultRelated {
 
 export type HjdictResult = HjdictResultLex | HjdictResultRelated
 
-type HjdictSearchResult = DictSearchResult<HjdictResult>
+export type HjdictSearchResult = DictSearchResult<HjdictResult>
 
 interface HjdictPayload {
   langCode?: string
 }
 
-export const search: SearchFunction<HjdictResult, HjdictPayload> = async (
-  text,
-  config,
-  profile,
-  payload
-) => {
+export interface _HjdictSearchResult<T> {
+  data: T
+  options: DictConfigs['hjdict']['options']
+  langCode: string
+}
+
+// export const search: SearchFunction<HjdictResult, HjdictPayload> = async (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const cookies = {
+//     HJ_SITEID: 3,
+//     HJ_UID: getUUID(),
+//     HJ_SID: getUUID(),
+//     HJ_SSID: getUUID(),
+//     HJID: 0,
+//     HJ_VT: 2,
+//     HJ_SST: 1,
+//     HJ_CSST: 1,
+//     HJ_ST: 1,
+//     HJ_CST: 1,
+//     HJ_T: +new Date(),
+//     _: getUUID(16)
+//   }
+
+//   await Promise.all(
+//     Object.keys(cookies).map(name =>
+//       browser.cookies.set({
+//         url: 'https://www.hjdict.com',
+//         domain: 'hjdict.com',
+//         name,
+//         value: String(cookies[name])
+//       })
+//     )
+//   )
+
+//   const langCode = payload.langCode || getLangCode(text, profile)
+
+//   return fetchDirtyDOM(
+//     `https://www.hjdict.com/${langCode}/${encodeURIComponent(text)}`,
+//     {
+//       withCredentials: true
+//     }
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, profile.dicts.all.hjdict.options, langCode))
+// }
+
+export const search: SearchFunction<
+  _HjdictSearchResult<string>,
+  HjdictPayload
+> = async (text, config, profile, payload) => {
   const cookies = {
     HJ_SITEID: 3,
     HJ_UID: getUUID(),
@@ -84,14 +133,34 @@ export const search: SearchFunction<HjdictResult, HjdictPayload> = async (
 
   const langCode = payload.langCode || getLangCode(text, profile)
 
-  return fetchDirtyDOM(
+  return fetchPlainText(
     `https://www.hjdict.com/${langCode}/${encodeURIComponent(text)}`,
     {
       withCredentials: true
     }
   )
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, profile.dicts.all.hjdict.options, langCode))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options: profile.dicts.all.hjdict.options,
+          langCode
+        }
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _HjdictSearchResult<string>
+): Promise<HjdictSearchResult> {
+  return handleDOM(
+    parseDomFromPlainHtml(
+      result.data,
+      result.options,
+      result.langCode
+    )
+  )
 }
 
 function handleDOM(

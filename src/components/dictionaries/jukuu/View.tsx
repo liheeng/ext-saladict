@@ -1,11 +1,40 @@
 import React, { FC } from 'react'
-import { JukuuResult, JukuuPayload, JukuuLang } from './engine'
+import {
+  JukuuPayload,
+  JukuuLang,
+  JukuuSearchResult,
+  _JukuuSearchResult,
+  parseSearchResult
+} from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { useTranslate } from '@/_helpers/i18n'
 import { StrElm } from '@/components/StrElm'
 
-export const DictJukuu: FC<ViewPorps<JukuuResult>> = props => {
-  const { result, searchText } = props
+export const DictJukuu: FC<ViewPorps<_JukuuSearchResult<string>>> = props => {
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<JukuuSearchResult | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result = parsedResult.result
+  const { searchText } = props
   const { t } = useTranslate('dicts')
   return (
     <>

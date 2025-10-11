@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getText,
@@ -10,7 +10,7 @@ import {
   removeChildren,
   DictSearchResult
 } from '../helpers'
-
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 export type JukuuLang = 'engjp' | 'zhjp' | 'zheng'
 
 function getUrl(text: string, lang: JukuuLang) {
@@ -46,21 +46,44 @@ export interface JukuuPayload {
   lang?: JukuuLang
 }
 
-type JukuuSearchResult = DictSearchResult<JukuuResult>
+export type JukuuSearchResult = DictSearchResult<JukuuResult>
 
-export const search: SearchFunction<JukuuResult, JukuuPayload> = (
-  text,
-  config,
-  profile,
-  payload
-) => {
+export interface _JukuuSearchResult<T> {
+  data: T
+  lang: JukuuLang
+}
+
+export const search: SearchFunction<
+  _JukuuSearchResult<string>,
+  JukuuPayload
+> = (text, config, profile, payload) => {
   const lang = payload.lang || profile.dicts.all.jukuu.options.lang
-  return fetchDirtyDOM(getUrl(text, lang))
+  return fetchPlainText(getUrl(text, lang))
     .catch(handleNetWorkError)
-    .then(handleDOM)
-    .then(sens =>
-      sens.length > 0 ? { result: { lang, sens } } : handleNoResult()
-    )
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          lang: lang
+        }
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _JukuuSearchResult<string>
+): Promise<JukuuSearchResult> {
+  return new Promise((resolve, reject) => {
+    resolve(handleDOM(parseDomFromPlainHtml(result.data)))
+  }).then(sens => {
+    if ((sens as any).length > 0) {
+      return {
+        result: { lang: result.lang, sens } as JukuuResult
+      }
+    } else {
+      return handleNoResult()
+    }
+  })
 }
 
 function handleDOM(doc: Document): JukuuTransItem[] {
