@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPalinText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getText,
@@ -10,6 +10,7 @@ import {
   DictSearchResult,
   getFullLink
 } from '../helpers'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://www.91dict.com/words?w=${encodeURIComponent(
@@ -39,21 +40,50 @@ interface RenrenResultItem {
 
 export type RenrenResult = RenrenResultItem[]
 
-type RenrenSearchResult = DictSearchResult<RenrenResult>
+export type RenrenSearchResult = DictSearchResult<RenrenResult>
 
-export const search: SearchFunction<RenrenResult> = (
+export interface _RenrenSearchResult<T> {
+  data: T
+}
+
+// export const search: SearchFunction<RenrenResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   return fetchDirtyDOM(
+//     `https://www.91dict.com/words?w=${encodeURIComponent(
+//       text.replace(/\s+/g, '+')
+//     )}`
+//   )
+//     .catch(handleNetWorkError)
+//     .then(handleDOM)
+// }
+
+export const search: SearchFunction<_RenrenSearchResult<string>> = (
   text,
   config,
   profile,
   payload
 ) => {
-  return fetchDirtyDOM(
+  return fetchPlainText(
     `https://www.91dict.com/words?w=${encodeURIComponent(
       text.replace(/\s+/g, '+')
     )}`
   )
     .catch(handleNetWorkError)
-    .then(handleDOM)
+    .then(doc => {
+      return {
+        result: { data: doc } as _RenrenSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _RenrenSearchResult<string>
+): Promise<RenrenSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data))
 }
 
 function handleDOM(

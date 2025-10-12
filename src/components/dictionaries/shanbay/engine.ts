@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   getText,
   getInnerHTML,
@@ -12,6 +12,7 @@ import {
 import { DictConfigs } from '@/app-config'
 import axios from 'axios'
 import DOMPurify from 'dompurify'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://www.shanbay.com/bdc/mobile/preview/word?word=${text}`
@@ -39,20 +40,37 @@ export interface ShanbayResultLex {
 
 export type ShanbayResult = ShanbayResultLex
 
-type ShanbaySearchResult = DictSearchResult<ShanbayResult>
+export type ShanbaySearchResult = DictSearchResult<ShanbayResult>
 
-export const search: SearchFunction<ShanbayResult> = (
+export interface _ShanbaySearchResult<T> {
+  data: T
+  options: DictConfigs['shanbay']['options']
+}
+export const search: SearchFunction<_ShanbaySearchResult<string>> = (
   text,
   config,
   profile
 ) => {
   const options = profile.dicts.all.shanbay.options
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'https://www.shanbay.com/bdc/mobile/preview/word?word=' +
       encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(doc => checkResult(doc, options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options
+        }
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _ShanbaySearchResult<string>
+): Promise<ShanbaySearchResult> {
+  return checkResult(parseDomFromPlainHtml(result.data), result.options)
 }
 
 function checkResult(

@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getText,
@@ -10,6 +10,7 @@ import {
   GetSrcPageFunction,
   DictSearchResult
 } from '../helpers'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://www.oxfordlearnersdictionaries.com/search/english/direct/?q=${text}`
@@ -72,20 +73,50 @@ interface OaldictResultItem {
 
 export type OaldictResult = OaldictResultItem
 
-type OaldictSearchResult = DictSearchResult<OaldictResult>
+export type OaldictSearchResult = DictSearchResult<OaldictResult>
 
-export const search: SearchFunction<OaldictResult> = (
+export interface _OaldictSearchResult<T> {
+  data: T
+}
+
+// export const search: SearchFunction<OaldictResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   return fetchDirtyDOM(
+//     'https://www.oxfordlearnersdictionaries.com/search/english/direct/?q=' +
+//       encodeURIComponent(text.replace(/\s+/g, ' '))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc))
+// }
+
+export const search: SearchFunction<_OaldictSearchResult<string>> = (
   text,
   config,
   profile,
   payload
 ) => {
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'https://www.oxfordlearnersdictionaries.com/search/english/direct/?q=' +
       encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc))
+    .then(doc => {
+      return {
+        result: {
+          data: doc
+        } as _OaldictSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _OaldictSearchResult<string>
+): Promise<OaldictSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data))
 }
 
 function handleDOM(

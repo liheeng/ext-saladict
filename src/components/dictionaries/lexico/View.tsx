@@ -1,9 +1,37 @@
 import React, { FC } from 'react'
-import { LexicoResult, LexicoResultLex, LexicoResultRelated } from './engine'
-import { ViewPorps } from '@/components/dictionaries/helpers'
+import {
+  LexicoResult,
+  LexicoResultLex,
+  LexicoResultRelated,
+  _LexicoSearchResult,
+  parseSearchResult
+} from './engine'
+import { ViewPorps, DictSearchResult } from '@/components/dictionaries/helpers'
 import { StrElm } from '@/components/StrElm'
 
-export const DictLexico: FC<ViewPorps<LexicoResult>> = ({ result }) => {
+export const DictLexico: FC<ViewPorps<_LexicoSearchResult<string>>> = props => {
+  const [parsedResult, setParsedResult] = React.useState<DictSearchResult<
+    LexicoResult
+  > | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result = parsedResult.result
   switch (result.type) {
     case 'lex':
       return renderLex(result)

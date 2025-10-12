@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   handleNoResult,
@@ -14,6 +14,8 @@ import {
   externalLink
 } from '../helpers'
 import { getStaticSpeaker } from '@/components/Speaker'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
+import { DictConfigs } from '@/app-config'
 
 const getSrc = (text: string) =>
   `https://www.lexico.com/definition/${text.trim().replace(/\s+/g, '_')}`
@@ -37,7 +39,45 @@ export interface LexicoResultRelated {
 
 export type LexicoResult = LexicoResultLex | LexicoResultRelated
 
-export const search: SearchFunction<LexicoResult> = (
+export interface _LexicoSearchResult<T> {
+  data: T
+  options: DictConfigs['lexico']['options']
+}
+// export const search: SearchFunction<LexicoResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const { options } = profile.dicts.all.lexico
+
+//   return fetchDirtyDOM(getSrc(text))
+//     .catch(handleNetWorkError)
+//     .then(doc => {
+//       const $noResult = doc.querySelector('.no-exact-matches')
+//       if ($noResult) {
+//         if (options.related) {
+//           const $similar = $noResult.querySelectorAll<HTMLAnchorElement>(
+//             '.similar-results .search-results li a'
+//           )
+//           if ($similar.length > 0) {
+//             const result: LexicoResultRelated = {
+//               type: 'related',
+//               list: [...$similar].map($a => ({
+//                 href: getFullLink(HOST, $a, 'href'),
+//                 text: getText($a)
+//               }))
+//             }
+//             return { result }
+//           }
+//         }
+//         return handleNoResult()
+//       }
+//       return handleDOM(doc)
+//     })
+// }
+
+export const search: SearchFunction<_LexicoSearchResult<string>> = (
   text,
   config,
   profile,
@@ -45,30 +85,42 @@ export const search: SearchFunction<LexicoResult> = (
 ) => {
   const { options } = profile.dicts.all.lexico
 
-  return fetchDirtyDOM(getSrc(text))
+  return fetchPlainText(getSrc(text))
     .catch(handleNetWorkError)
     .then(doc => {
-      const $noResult = doc.querySelector('.no-exact-matches')
-      if ($noResult) {
-        if (options.related) {
-          const $similar = $noResult.querySelectorAll<HTMLAnchorElement>(
-            '.similar-results .search-results li a'
-          )
-          if ($similar.length > 0) {
-            const result: LexicoResultRelated = {
-              type: 'related',
-              list: [...$similar].map($a => ({
-                href: getFullLink(HOST, $a, 'href'),
-                text: getText($a)
-              }))
-            }
-            return { result }
-          }
+      return {
+        result: {
+          data: doc,
+          options
         }
-        return handleNoResult()
       }
-      return handleDOM(doc)
     })
+}
+
+export async function parseSearchResult(
+  result: _LexicoSearchResult<string>
+): Promise<DictSearchResult<LexicoResult>> {
+  const doc = parseDomFromPlainHtml(result.data)
+  const $noResult = doc.querySelector('.no-exact-matches')
+  if ($noResult) {
+    if (result.options.related) {
+      const $similar = $noResult.querySelectorAll<HTMLAnchorElement>(
+        '.similar-results .search-results li a'
+      )
+      if ($similar.length > 0) {
+        const result: LexicoResultRelated = {
+          type: 'related',
+          list: [...$similar].map($a => ({
+            href: getFullLink(HOST, $a, 'href'),
+            text: getText($a)
+          }))
+        }
+        return { result }
+      }
+    }
+    return handleNoResult()
+  }
+  return handleDOM(doc)
 }
 
 function handleDOM(

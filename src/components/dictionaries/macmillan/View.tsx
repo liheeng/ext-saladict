@@ -2,17 +2,42 @@ import React, { FC, ReactNode } from 'react'
 import Speaker from '@/components/Speaker'
 import StarRates from '@/components/StarRates'
 import {
-  MacmillanResult,
   MacmillanResultLex,
-  MacmillanResultRelated
+  MacmillanResultRelated,
+  _MacmillanSearchResult,
+  MacmillanSearchResult,
+  parseSearchResult
 } from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { StrElm } from '@/components/StrElm'
 
-export const DictMacmillan: FC<ViewPorps<MacmillanResult>> = ({
-  result,
-  searchText
-}) => {
+export const DictMacmillan: FC<ViewPorps<
+  _MacmillanSearchResult<string>
+>> = props => {
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<MacmillanSearchResult | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result = parsedResult.result
+  const searchText = props.searchText
   switch (result.type) {
     case 'lex':
       return renderLex(result, renderSelect(result, searchText))

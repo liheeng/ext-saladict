@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getText,
@@ -12,6 +12,7 @@ import {
 } from '../helpers'
 import { DictConfigs } from '@/app-config'
 import { getStaticSpeaker } from '@/components/Speaker'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://www.ldoceonline.com/dictionary/${text
@@ -68,23 +69,56 @@ export interface LongmanResultRelated {
 
 export type LongmanResult = LongmanResultLex | LongmanResultRelated
 
-type LongmanSearchResult = DictSearchResult<LongmanResult>
+export type LongmanSearchResult = DictSearchResult<LongmanResult>
 type LongmanSearchResultLex = DictSearchResult<LongmanResultLex>
 type LongmanSearchResultRelated = DictSearchResult<LongmanResultRelated>
 
-export const search: SearchFunction<LongmanResult> = (
+export interface _LongmanSearchResult<T> {
+  data: T
+  options: DictConfigs['longman']['options']
+}
+
+// export const search: SearchFunction<LongmanResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const options = profile.dicts.all.longman.options
+//   return fetchDirtyDOM(
+//     'http://www.ldoceonline.com/dictionary/' +
+//       text.toLocaleLowerCase().replace(/[^A-Za-z0-9]+/g, '-')
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, options))
+// }
+
+export const search: SearchFunction<_LongmanSearchResult<string>> = (
   text,
   config,
   profile,
   payload
 ) => {
   const options = profile.dicts.all.longman.options
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'http://www.ldoceonline.com/dictionary/' +
       text.toLocaleLowerCase().replace(/[^A-Za-z0-9]+/g, '-')
   )
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options
+        } as _LongmanSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _LongmanSearchResult<string>
+): Promise<LongmanSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.options)
 }
 
 function handleDOM(

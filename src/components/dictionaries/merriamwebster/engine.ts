@@ -1,10 +1,10 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   handleNetWorkError,
   SearchFunction,
   GetSrcPageFunction
 } from '../helpers'
-
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://www.merriam-webster.com/dictionary/${text}`
 }
@@ -47,7 +47,30 @@ export interface MerriamWebsterResultV2 {
   etymology?: Array<[string, string]>
 }
 
-export const search: SearchFunction<MerriamWebsterResultV2> = (
+export interface _MerriamWebsterSearchResult<T> {
+  data: T
+}
+
+// export const search: SearchFunction<MerriamWebsterResultV2> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   // const options = profile.dicts.all.merriamwebster.options
+
+//   return fetchDirtyDOM(
+//     'https://www.merriam-webster.com/dictionary/' +
+//       encodeURIComponent(text.replace(/\s+/g, ' '))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => {
+//       return { result: getResult(doc) }
+//       // return handleDOM(doc, options)
+//     })
+// }
+
+export const search: SearchFunction<_MerriamWebsterSearchResult<string>> = (
   text,
   config,
   profile,
@@ -55,15 +78,26 @@ export const search: SearchFunction<MerriamWebsterResultV2> = (
 ) => {
   // const options = profile.dicts.all.merriamwebster.options
 
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'https://www.merriam-webster.com/dictionary/' +
       encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
     .then(doc => {
-      return { result: getResult(doc) }
+      return {
+        result: {
+          data: doc
+        }
+      }
       // return handleDOM(doc, options)
     })
+}
+
+export async function parseSearchResult(
+  result: _MerriamWebsterSearchResult<string>
+): Promise<{ result: MerriamWebsterResultV2 }> {
+  const doc = parseDomFromPlainHtml(result.data)
+  return { result: getResult(doc) }
 }
 
 export function _getContentEle(doc: Document): Element {

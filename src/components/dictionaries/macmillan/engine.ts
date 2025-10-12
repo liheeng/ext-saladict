@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getInnerHTML,
@@ -15,6 +15,7 @@ import {
   getOuterHTML
 } from '../helpers'
 import { DictConfigs } from '@/app-config'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = (text, config, profile) => {
   const lang =
@@ -55,25 +56,58 @@ export interface MacmillanResultRelated {
 
 export type MacmillanResult = MacmillanResultLex | MacmillanResultRelated
 
-type MacmillanSearchResult = DictSearchResult<MacmillanResult>
+export type MacmillanSearchResult = DictSearchResult<MacmillanResult>
 
 export interface MacmillanPayload {
   href?: string
 }
 
-export const search: SearchFunction<MacmillanResult, MacmillanPayload> = async (
-  text,
-  config,
-  profile,
-  payload
-) => {
+export interface _MacmillanSearchResult<T> {
+  data: T
+  options: DictConfigs['macmillan']['options']
+}
+
+// export const search: SearchFunction<MacmillanResult, MacmillanPayload> = async (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const options = profile.dicts.all.macmillan.options
+
+//   return fetchMacmillanDom(
+//     payload.href || (await getSrcPage(text, config, profile))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => checkResult(doc, options))
+// }
+
+export const search: SearchFunction<
+  _MacmillanSearchResult<string>,
+  MacmillanPayload
+> = async (text, config, profile, payload) => {
   const options = profile.dicts.all.macmillan.options
 
-  return fetchMacmillanDom(
+  return fetchPlainText(
     payload.href || (await getSrcPage(text, config, profile))
   )
     .catch(handleNetWorkError)
-    .then(doc => checkResult(doc, options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options
+        } as _MacmillanSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _MacmillanSearchResult<string>
+): Promise<MacmillanSearchResult> {
+  const doc = parseDomFromPlainHtml(result.data)
+  removeChildren(doc, '.visible-xs')
+  return checkResult(doc, result.options)
 }
 
 async function checkResult(
@@ -169,8 +203,8 @@ function handleDOM(
   return { result, audio }
 }
 
-async function fetchMacmillanDom(url: string): Promise<Document> {
-  const doc = await fetchDirtyDOM(url)
-  removeChildren(doc, '.visible-xs')
-  return doc
-}
+// async function fetchMacmillanDom(url: string): Promise<Document> {
+//   const doc = await fetchDirtyDOM(url)
+//   removeChildren(doc, '.visible-xs')
+//   return doc
+// }

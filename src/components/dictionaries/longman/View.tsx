@@ -2,21 +2,49 @@ import React, { FC } from 'react'
 import Speaker from '@/components/Speaker'
 import StarRates from '@/components/StarRates'
 import {
-  LongmanResult,
   LongmanResultLex,
   LongmanResultRelated,
-  LongmanResultEntry
+  LongmanResultEntry,
+  LongmanSearchResult,
+  _LongmanSearchResult,
+  parseSearchResult
 } from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { StrElm } from '@/components/StrElm'
 
-export const DictLongman: FC<ViewPorps<LongmanResult>> = ({ result }) =>
-  result.type === 'lex'
-    ? renderLex(result)
-    : result.type === 'related'
-    ? renderRelated(result)
-    : null
+export const DictLongman: FC<ViewPorps<
+  _LongmanSearchResult<string>
+>> = props => {
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<LongmanSearchResult | null>(null)
 
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result = parsedResult.result
+  if (result.type === 'lex') {
+    return renderLex(result)
+  } else if (result.type === 'related') {
+    return renderRelated(result)
+  }
+  return null
+}
 export default DictLongman
 
 function renderEntry(entry: LongmanResultEntry) {

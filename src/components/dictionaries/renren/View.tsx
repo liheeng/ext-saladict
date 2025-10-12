@@ -1,6 +1,11 @@
 import React, { FC, useState, useEffect } from 'react'
 import Speaker from '@/components/Speaker'
-import { RenrenResult, RenrenSlide } from './engine'
+import {
+  RenrenSlide,
+  _RenrenSearchResult,
+  RenrenSearchResult,
+  parseSearchResult
+} from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { message } from '@/_helpers/browser-api'
 import { StrElm } from '@/components/StrElm'
@@ -40,10 +45,32 @@ const Slide: FC<RenrenSlideProps> = ({ slide }) => {
   )
 }
 
-export const DictRenren: FC<ViewPorps<RenrenResult>> = ({ result }) => {
+export const DictRenren: FC<ViewPorps<_RenrenSearchResult<string>>> = props => {
   const [slide, setSlide] = useState(0)
   const [details, setDetails] = useState<{ [k: string]: RenrenSlide[] }>({})
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<RenrenSearchResult | null>(null)
 
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const { result } = parsedResult
   useEffect(() => {
     setSlide(0)
   }, [result])
