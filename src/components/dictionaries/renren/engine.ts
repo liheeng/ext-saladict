@@ -1,4 +1,4 @@
-import { fetchPalinText } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getText,

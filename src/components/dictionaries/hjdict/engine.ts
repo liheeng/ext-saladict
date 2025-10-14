@@ -155,11 +155,9 @@ export async function parseSearchResult(
   result: _HjdictSearchResult<string>
 ): Promise<HjdictSearchResult> {
   return handleDOM(
-    parseDomFromPlainHtml(
-      result.data,
-      result.options,
-      result.langCode
-    )
+    parseDomFromPlainHtml(result.data),
+    result.options,
+    result.langCode
   )
 }
 

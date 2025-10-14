@@ -38,7 +38,7 @@ export interface _VocabularySearchResult<T> {
 //     .then(handleDOM)
 // }
 
-export const search: SearchFunction<_VocabularySearchResult<string> = (
+export const search: SearchFunction<_VocabularySearchResult<string>> = (
   text,
   config,
   profile,
