@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getText,
@@ -11,7 +11,8 @@ import {
 } from '../helpers'
 
 import axios from 'axios'
-
+import { DictConfigs } from '@/app-config'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 export const getSrcPage: GetSrcPageFunction = text => {
   return `http://www.urbandictionary.com/define.php?term=${text}`
 }
@@ -60,9 +61,30 @@ interface thumbMap {
 
 export type UrbanResult = UrbanResultItem[]
 
-type UrbanSearchResult = DictSearchResult<UrbanResult>
+export type UrbanSearchResult = DictSearchResult<UrbanResult>
 
-export const search: SearchFunction<UrbanResult> = (
+export interface _UrbanSearchResult<T> {
+  data: T
+  options: DictConfigs['urban']['options']
+}
+
+// export const search: SearchFunction<UrbanResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const options = profile.dicts.all.urban.options
+
+//   return fetchDirtyDOM(
+//     'http://www.urbandictionary.com/define.php?term=' +
+//       encodeURIComponent(text.replace(/\s+/g, ' '))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, options))
+// }
+
+export const search: SearchFunction<_UrbanSearchResult<string>> = (
   text,
   config,
   profile,
@@ -70,12 +92,25 @@ export const search: SearchFunction<UrbanResult> = (
 ) => {
   const options = profile.dicts.all.urban.options
 
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'http://www.urbandictionary.com/define.php?term=' +
       encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options
+        } as _UrbanSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _UrbanSearchResult<string>
+): Promise<UrbanSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.options)
 }
 
 /** get thumbs-up and thumbs-down nums  */

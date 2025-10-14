@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchDirtyDOM, fetchPlainText } from '@/_helpers/fetch-dom'
 import { isContainJapanese, isContainChinese } from '@/_helpers/lang-check'
 import {
   handleNoResult,
@@ -12,6 +12,7 @@ import {
   getFullLink
 } from '../helpers'
 import { AllDicts } from '@/app-config'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = (text, config, profile) => {
   const { lang } = profile.dicts.all.wikipedia.options
@@ -35,19 +36,51 @@ export interface WikipediaResult {
   langSelector: string
 }
 
-type WikipediaSearchResult = DictSearchResult<WikipediaResult>
+export type WikipediaSearchResult = DictSearchResult<WikipediaResult>
 
 export type WikipediaPayload = {
   /** Search a specific url */
   url?: string
 }
 
-export const search: SearchFunction<WikipediaResult, WikipediaPayload> = (
-  text,
-  config,
-  profile,
-  payload
-) => {
+export interface _WikipediaSearchResult<T> {
+  data: T
+  subdomain: string
+}
+
+// export const search: SearchFunction<WikipediaResult, WikipediaPayload> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const { lang } = profile.dicts.all.wikipedia.options
+//   let subdomain = getSubdomain(text, lang)
+
+//   let url = payload.url
+//   if (url) {
+//     const matchSubdomain = url.match(/([^/.]+)\.m\.wikipedia\.org/)
+//     if (matchSubdomain) {
+//       subdomain = matchSubdomain[1]
+//     } else {
+//       url = url.replace(/^\//, `https://${subdomain}.m.wikipedia.org/`)
+//     }
+//   } else {
+//     const path = lang.startsWith('zh-') ? lang : 'wiki'
+//     url = `https://${subdomain}.m.wikipedia.org/${path}/${encodeURIComponent(
+//       text
+//     )}`
+//   }
+
+//   return fetchDirtyDOM(url)
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, subdomain))
+// }
+
+export const search: SearchFunction<
+  _WikipediaSearchResult<string>,
+  WikipediaPayload
+> = (text, config, profile, payload) => {
   const { lang } = profile.dicts.all.wikipedia.options
   let subdomain = getSubdomain(text, lang)
 
@@ -66,9 +99,16 @@ export const search: SearchFunction<WikipediaResult, WikipediaPayload> = (
     )}`
   }
 
-  return fetchDirtyDOM(url)
+  return fetchPlainText(url)
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, subdomain))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          subdomain
+        } as _WikipediaSearchResult<string>
+      }
+    })
 }
 
 export function fetchLangList(langSelector: string) {
@@ -78,6 +118,12 @@ export function fetchLangList(langSelector: string) {
       console.error('dict wikipedia: fetch langlist failed', e)
       return [] as LangList
     })
+}
+
+export async function parseSearchResult(
+  result: _WikipediaSearchResult<string>
+): Promise<WikipediaSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.subdomain)
 }
 
 function handleDOM(
@@ -104,7 +150,7 @@ function handleDOM(
 
   doc.querySelectorAll('#bodyContent .section-heading').forEach($header => {
     $header.classList.add('collapsible-heading')
-    $header.setAttribute("role", "button")
+    $header.setAttribute('role', 'button')
     const $icon = $header.querySelector('.mw-ui-icon')
     if ($icon) {
       $icon.classList.add('mw-ui-icon-mf-arrow')

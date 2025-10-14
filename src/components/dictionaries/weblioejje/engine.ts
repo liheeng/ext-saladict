@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   handleNoResult,
   handleNetWorkError,
@@ -12,6 +12,7 @@ import {
   DictSearchResult
 } from '../helpers'
 import { getStaticSpeakerString, getStaticSpeaker } from '@/components/Speaker'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://ejje.weblio.jp/content/${encodeURIComponent(
@@ -26,17 +27,44 @@ export type WeblioejjeResult = Array<{
   content: HTMLString
 }>
 
-type WeblioejjeSearchResult = DictSearchResult<WeblioejjeResult>
+export type WeblioejjeSearchResult = DictSearchResult<WeblioejjeResult>
 
-export const search: SearchFunction<WeblioejjeResult> = (
+export interface _WeblioejjeSearchResult<T> {
+  data: T
+}
+
+// export const search: SearchFunction<WeblioejjeResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   return fetchDirtyDOM(getSrcPage(text, config, profile))
+//     .catch(handleNetWorkError)
+//     .then(handleDOM)
+// }
+
+export const search: SearchFunction<_WeblioejjeSearchResult<string>> = (
   text,
   config,
   profile,
   payload
 ) => {
-  return fetchDirtyDOM(getSrcPage(text, config, profile))
+  return fetchPlainText(getSrcPage(text, config, profile) as string)
     .catch(handleNetWorkError)
-    .then(handleDOM)
+    .then(doc => {
+      return {
+        result: {
+          data: doc
+        } as _WeblioejjeSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _WeblioejjeSearchResult<string>
+): Promise<WeblioejjeSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data))
 }
 
 function handleDOM(

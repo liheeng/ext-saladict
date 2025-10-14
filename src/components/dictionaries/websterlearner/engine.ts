@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getInnerHTML,
@@ -9,6 +9,7 @@ import {
   DictSearchResult
 } from '../helpers'
 import { DictConfigs } from '@/app-config'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `http://www.learnersdictionary.com/definition/${text
@@ -47,10 +48,31 @@ export type WebsterLearnerResult =
   | WebsterLearnerResultLex
   | WebsterLearnerResultRelated
 
-type WebsterLearnerSearchResult = DictSearchResult<WebsterLearnerResult>
+export type WebsterLearnerSearchResult = DictSearchResult<WebsterLearnerResult>
 type WebsterLearnerSearchResultLex = DictSearchResult<WebsterLearnerResultLex>
 
-export const search: SearchFunction<WebsterLearnerResult> = (
+export interface _WebsterLearnerSearchResult<T> {
+  data: T
+  options: DictConfigs['websterlearner']['options']
+}
+
+// export const search: SearchFunction<WebsterLearnerResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const options = profile.dicts.all.websterlearner.options
+
+//   return fetchDirtyDOM(
+//     'http://www.learnersdictionary.com/definition/' +
+//       text.toLocaleLowerCase().replace(/[^A-Za-z0-9]+/g, '-')
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => checkResult(doc, options))
+// }
+
+export const search: SearchFunction<_WebsterLearnerSearchResult<string>> = (
   text,
   config,
   profile,
@@ -58,12 +80,25 @@ export const search: SearchFunction<WebsterLearnerResult> = (
 ) => {
   const options = profile.dicts.all.websterlearner.options
 
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'http://www.learnersdictionary.com/definition/' +
       text.toLocaleLowerCase().replace(/[^A-Za-z0-9]+/g, '-')
   )
     .catch(handleNetWorkError)
-    .then(doc => checkResult(doc, options))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          options
+        } as _WebsterLearnerSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _WebsterLearnerSearchResult<string>
+): Promise<WebsterLearnerSearchResult> {
+  return checkResult(parseDomFromPlainHtml(result.data), result.options)
 }
 
 function checkResult(

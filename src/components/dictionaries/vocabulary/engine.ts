@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   getText,
   handleNoResult,
@@ -7,6 +7,7 @@ import {
   GetSrcPageFunction,
   DictSearchResult
 } from '../helpers'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://www.vocabulary.com/dictionary/${text}`
@@ -17,20 +18,50 @@ export interface VocabularyResult {
   long: string
 }
 
-type VocabularySearchResult = DictSearchResult<VocabularyResult>
+export type VocabularySearchResult = DictSearchResult<VocabularyResult>
 
-export const search: SearchFunction<VocabularyResult> = (
+export interface _VocabularySearchResult<T> {
+  data: T
+}
+
+// export const search: SearchFunction<VocabularyResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   return fetchDirtyDOM(
+//     'https://www.vocabulary.com/dictionary/' +
+//       encodeURIComponent(text.replace(/\s+/g, ' '))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(handleDOM)
+// }
+
+export const search: SearchFunction<_VocabularySearchResult<string> = (
   text,
   config,
   profile,
   payload
 ) => {
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'https://www.vocabulary.com/dictionary/' +
       encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(handleDOM)
+    .then(doc => {
+      return {
+        result: {
+          data: doc
+        } as _VocabularySearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _VocabularySearchResult<string>
+): Promise<VocabularySearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data))
 }
 
 function handleDOM(

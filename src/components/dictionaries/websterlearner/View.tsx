@@ -1,16 +1,41 @@
 import React, { FC } from 'react'
 import Speaker from '@/components/Speaker'
 import {
-  WebsterLearnerResult,
   WebsterLearnerResultLex,
-  WebsterLearnerResultRelated
+  WebsterLearnerResultRelated,
+  WebsterLearnerSearchResult,
+  _WebsterLearnerSearchResult,
+  parseSearchResult
 } from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { StrElm } from '@/components/StrElm'
 
-export const DictWebsterLearner: FC<ViewPorps<WebsterLearnerResult>> = ({
-  result
-}) => {
+export const DictWebsterLearner: FC<ViewPorps<
+  _WebsterLearnerSearchResult<string>
+>> = props => {
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<WebsterLearnerSearchResult | null>(null)
+
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result = parsedResult.result
   switch (result.type) {
     case 'lex':
       return renderLex(result)

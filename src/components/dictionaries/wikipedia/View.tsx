@@ -1,26 +1,50 @@
 import React, { FC, useState, ReactNode, useEffect } from 'react'
 import {
-  WikipediaResult,
   WikipediaPayload,
   fetchLangList,
-  LangList
+  LangList,
+  WikipediaSearchResult,
+  _WikipediaSearchResult,
+  parseSearchResult
 } from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import { message } from '@/_helpers/browser-api'
 import { useTranslate } from '@/_helpers/i18n'
 import { StrElm } from '@/components/StrElm'
 
-export const DictWikipedia: FC<ViewPorps<WikipediaResult>> = ({
-  result,
-  searchText
-}) => {
+export const DictWikipedia: FC<ViewPorps<
+  _WikipediaSearchResult<string>
+>> = props => {
   const [langList, setLangList] = useState<LangList>()
   const { t } = useTranslate('content')
+  const [
+    parsedResult,
+    setParsedResult
+  ] = React.useState<WikipediaSearchResult | null>(null)
 
+  React.useEffect(() => {
+    let isMounted = true
+    parseSearchResult(props.result).then(value => {
+      if (isMounted) {
+        setParsedResult(value)
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [props.result])
+
+  if (!parsedResult) {
+    return null
+  }
+
+  const result = parsedResult.result
   useEffect(() => {
     setLangList([])
   }, [result.langSelector])
 
+  const searchText = props.searchText
   const handleSelectChanged = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (e.target.value) {
       searchText<WikipediaPayload>({

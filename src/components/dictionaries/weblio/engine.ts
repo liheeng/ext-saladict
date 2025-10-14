@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getInnerHTML,
@@ -11,7 +11,7 @@ import {
   getText,
   removeChild
 } from '../helpers'
-
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://www.weblio.jp/content/${text}`
 }
@@ -23,20 +23,50 @@ export type WeblioResult = Array<{
   def: HTMLString
 }>
 
-type WeblioSearchResult = DictSearchResult<WeblioResult>
+export type WeblioSearchResult = DictSearchResult<WeblioResult>
 
-export const search: SearchFunction<WeblioResult> = (
+export interface _WeblioSearchResult<T> {
+  data: T
+}
+
+// export const search: SearchFunction<WeblioResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   return fetchDirtyDOM(
+//     'https://www.weblio.jp/content/' +
+//       encodeURIComponent(text.replace(/\s+/g, ' '))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(handleDOM)
+// }
+
+export const search: SearchFunction<_WeblioSearchResult<string>> = (
   text,
   config,
   profile,
   payload
 ) => {
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'https://www.weblio.jp/content/' +
       encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(handleDOM)
+    .then(doc => {
+      return {
+        result: {
+          data: doc
+        } as _WeblioSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _WeblioSearchResult<string>
+): Promise<WeblioSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data))
 }
 
 function handleDOM(

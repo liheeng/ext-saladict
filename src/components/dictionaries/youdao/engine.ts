@@ -93,7 +93,7 @@ export const search: SearchFunction<_YoudaoSearchResult<string>> = async (
     })
 }
 
-export async function parseSearchResultString(
+export async function parseSearchResult(
   result: _YoudaoSearchResult<string>
 ): Promise<YoudaoSearchResult> {
   return checkResult(

@@ -4,7 +4,7 @@ import StarRates from '@/components/StarRates'
 import {
   _YoudaoSearchResult,
   YoudaoSearchResult,
-  parseSearchResultString
+  parseSearchResult
 } from './engine'
 import { ViewPorps } from '@/components/dictionaries/helpers'
 import EntryBox from '@/components/EntryBox'
@@ -19,7 +19,7 @@ export const DictYoudao: FC<ViewPorps<_YoudaoSearchResult<string>>> = props => {
 
   React.useEffect(() => {
     let isMounted = true
-    parseSearchResultString(props.result).then(value => {
+    parseSearchResult(props.result).then(value => {
       if (isMounted) {
         setParsedResult(value as YoudaoSearchResult)
       }

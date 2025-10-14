@@ -1,4 +1,4 @@
-import { fetchDirtyDOM } from '@/_helpers/fetch-dom'
+import { fetchPlainText } from '@/_helpers/fetch-dom'
 import {
   HTMLString,
   getInnerHTML,
@@ -9,6 +9,7 @@ import {
   DictSearchResult
 } from '../helpers'
 import { getStaticSpeaker } from '@/components/Speaker'
+import { parseDomFromPlainHtml } from '@/_helpers/dom'
 
 export const getSrcPage: GetSrcPageFunction = text => {
   return `https://www.zdic.net/hans/${text}`
@@ -21,11 +22,35 @@ export type ZdicResult = Array<{
   content: HTMLString
 }>
 
-type ZdicSearchResult = DictSearchResult<ZdicResult>
+export type ZdicSearchResult = DictSearchResult<ZdicResult>
+
+export interface _ZdicSearchResult<T> {
+  data: T
+  isAudio: boolean
+}
 
 let isRefererModified = false
 
-export const search: SearchFunction<ZdicResult> = (
+// export const search: SearchFunction<ZdicResult> = (
+//   text,
+//   config,
+//   profile,
+//   payload
+// ) => {
+//   const isAudio = profile.dicts.all.zdic.options.audio
+//   if (!isRefererModified && isAudio) {
+//     isRefererModified = true
+//     modifyReferer()
+//   }
+
+//   return fetchDirtyDOM(
+//     'https://www.zdic.net/hans/' + encodeURIComponent(text.replace(/\s+/g, ' '))
+//   )
+//     .catch(handleNetWorkError)
+//     .then(doc => handleDOM(doc, isAudio))
+// }
+
+export const search: SearchFunction<_ZdicSearchResult<string>> = (
   text,
   config,
   profile,
@@ -37,11 +62,24 @@ export const search: SearchFunction<ZdicResult> = (
     modifyReferer()
   }
 
-  return fetchDirtyDOM(
+  return fetchPlainText(
     'https://www.zdic.net/hans/' + encodeURIComponent(text.replace(/\s+/g, ' '))
   )
     .catch(handleNetWorkError)
-    .then(doc => handleDOM(doc, isAudio))
+    .then(doc => {
+      return {
+        result: {
+          data: doc,
+          isAudio
+        } as _ZdicSearchResult<string>
+      }
+    })
+}
+
+export async function parseSearchResult(
+  result: _ZdicSearchResult<string>
+): Promise<ZdicSearchResult> {
+  return handleDOM(parseDomFromPlainHtml(result.data), result.isAudio)
 }
 
 function handleDOM(
