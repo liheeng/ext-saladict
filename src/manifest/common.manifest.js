@@ -1,13 +1,13 @@
 module.exports = {
   manifest_version: 3,
 
-  homepage_url: 'https://saladict.crimx.com/',
+  homepage_url: 'https://dict.beaitoday.com/',
 
   minimum_chrome_version: '55',
 
-  name: '__MSG_extension_name__',
-  short_name: '__MSG_extension_short_name__',
-  description: '__MSG_extension_description__',
+  name: 'saladict-revised',
+  short_name: 'saladict-revised',
+  description: 'A revised version of the Saladict extension.',
 
   default_locale: 'zh_CN',
 
@@ -82,7 +82,16 @@ module.exports = {
 
   web_accessible_resources: [
     {
-      resources: ['assets/*', 'audio-control.html', 'quick-search.html'],
+      resources: [
+        'assets/*',
+        'audio-control.html',
+        'quick-search.html',
+        'options.html',
+        'popup.html',
+        'notebook.html',
+        'word-editor.html',
+        'history.html'
+      ],
       matches: ['<all_urls>']
     }
   ],
@@ -97,7 +106,8 @@ module.exports = {
     'tabs',
     'unlimitedStorage',
     'webRequest',
-    'webRequestBlocking'
+    'webRequestBlocking',
+    'scripting'
   ],
 
   host_permissions: ['<all_urls>'],

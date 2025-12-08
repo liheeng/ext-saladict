@@ -364,13 +364,14 @@ async function messageSendSelf<T extends MsgType, R = undefined>(
     callContext = new Error('Message Call Context')
   }
 
-  if (window.pageId === undefined) {
+  const _window = getWindowObj()
+  if (_window.pageId === undefined) {
     await initClient()
   }
   return browser.runtime
     .sendMessage(
       Object.assign({}, message, {
-        __pageId__: window.pageId,
+        __pageId__: _window.pageId,
         type: `[[${message.type}]]`
       })
     )
@@ -392,7 +393,9 @@ function messageAddListener<T extends MsgType>(
   this: MessageThis,
   ...args: [T, onMessageEvent<Message<T>>] | [onMessageEvent<Message>]
 ): void {
-  if (window.pageId === undefined) {
+  console.debug('call messageAddListener, args: ', args as any)
+  const _window = getWindowObj()
+  if (_window.pageId === undefined) {
     initClient()
   }
   const allListeners = this.__self__ ? messageSelfListeners : messageListeners
@@ -406,10 +409,11 @@ function messageAddListener<T extends MsgType>(
   let listener = listeners.get(messageType || '__DEFAULT_MSGTYPE__')
   if (!listener) {
     listener = ((message, sender) => {
+      const _window = getWindowObj()
       if (
         message &&
         (this.__self__
-          ? window.pageId === message.__pageId__
+          ? _window.pageId === message.__pageId__
           : !message.__pageId__)
       ) {
         if (messageType == null || message.type === messageType) {
@@ -487,22 +491,24 @@ function messageCreateStream<T extends MsgType>(
  * This method is called on the first sendMessage
  */
 function initClient(): Promise<typeof window.pageId> {
-  if (window.pageId === undefined) {
+  const _window = getWindowObj()
+  if (_window.pageId === undefined) {
     return message
       .send<'PAGE_INFO'>({ type: 'PAGE_INFO' })
       .then(({ pageId, faviconURL, pageTitle, pageURL }) => {
-        window.pageId = pageId
-        window.faviconURL = faviconURL
+        const _window = getWindowObj()
+        _window.pageId = pageId
+        _window.faviconURL = faviconURL
         if (pageTitle) {
-          window.pageTitle = pageTitle
+          _window.pageTitle = pageTitle
         }
         if (pageURL) {
-          window.pageURL = pageURL
+          _window.pageURL = pageURL
         }
         return pageId
       })
   } else {
-    return Promise.resolve(window.pageId)
+    return Promise.resolve(_window.pageId)
   }
 }
 
@@ -511,7 +517,9 @@ function initClient(): Promise<typeof window.pageId> {
  * This method should be invoked in background script
  */
 function initServer(): void {
-  window.pageId = 'background page'
+  console.info('call initServer')
+  // window.pageId = 'background page'
+  getGlobalThis().fake_background_window.pageId = 'background page'
   const selfMsgTester = /^\[\[(.+)\]\]$/
 
   browser.runtime.onMessage.addListener(
@@ -565,4 +573,66 @@ function _getPageInfo(sender: browser.runtime.MessageSender) {
     }
   }
   return result
+}
+
+export function getWindowObj(): any {
+  let _window: any
+  if (isServiceWorker()) {
+    _window = getGlobalThis().fake_background_window
+  } else {
+    _window = window
+  }
+  return _window
+}
+
+export function isServiceWorker(): boolean {
+  // return getGlobalThis().registration !== undefined
+  return self instanceof Worker
+}
+
+export function isSharedWorker(): boolean {
+  return self instanceof SharedWorker
+}
+
+export function getGlobal(): any {
+  // 现代浏览器 和 Web Workers
+  if (typeof self !== 'undefined') {
+    return self
+  }
+
+  // 传统浏览器环境
+  if (typeof window !== 'undefined') {
+    return window
+  }
+
+  // Node.js 环境
+  if (typeof global !== 'undefined') {
+    return global
+  }
+
+  // 非严格模式下的通用回退 (this)
+  try {
+    // eslint-disable-next-line no-new-func
+    return Function('return this')()
+  } catch (e) {
+    throw new Error('Unable to locate global object')
+  }
+}
+
+export function getGlobalThis(): any {
+  // 1. 如果 globalThis 已经存在，则什么都不做
+  if (typeof globalThis === 'object') {
+    // eslint-disable-next-line no-undef
+    return globalThis
+  }
+
+  // 2. 依次尝试获取不同环境下的全局对象
+  var globals = getGlobal()
+
+  // 3. 将找到的全局对象挂载为 globalThis
+  // 注意：我们使用 Object.defineProperty 以确保它是不可枚举的，更符合标准
+  if (typeof globals !== 'undefined') {
+    globals.globalThis = globals
+  }
+  return globals
 }
