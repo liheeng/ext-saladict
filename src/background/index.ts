@@ -16,10 +16,15 @@ import { setupRequestGAListener } from '@/_helpers/analytics'
 import './types'
 
 // window is not defined in background script, but we need it for some reason
-getGlobalThis().background_window = {
+getGlobalThis().fake_background_window = {
   name: 'background',
   version: '1.0.0'
 } as any
+
+console.info(
+  'getGlobalThis().fake_background_window',
+  getGlobalThis().fake_background_window
+)
 
 SalaDictExtension.init()
 

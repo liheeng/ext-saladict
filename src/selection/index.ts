@@ -4,7 +4,7 @@ import {
   getTextFromSelection,
   getSentenceFromSelection
 } from 'get-selection-more'
-import { message } from '@/_helpers/browser-api'
+import { message, getWindowObj } from '@/_helpers/browser-api'
 import { createConfigStream } from '@/_helpers/config-manager'
 import { isInDictPanel } from '@/_helpers/saladict'
 
@@ -22,8 +22,8 @@ import { createQuickSearchStream } from './quick-search'
 import { createSelectTextStream } from './select-text'
 
 // Firefox somehow loads it two times
-if (!window.__SALADICT_SELECTION_LOADED__) {
-  window.__SALADICT_SELECTION_LOADED__ = true
+if (!getWindowObj().__SALADICT_SELECTION_LOADED__) {
+  getWindowObj().__SALADICT_SELECTION_LOADED__ = true
 
   const config$$ = createConfigStream().pipe(
     map(config => (isBlacklisted(config) ? null : config)),

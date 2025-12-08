@@ -1,4 +1,5 @@
 export {}
+import { getWindowObj } from '@/_helpers/browser-api'
 
-window.__SALADICT_INTERNAL_PAGE__ = true
-window.__SALADICT_QUICK_SEARCH_PAGE__ = true
+getWindowObj().__SALADICT_INTERNAL_PAGE__ = true
+getWindowObj().__SALADICT_QUICK_SEARCH_PAGE__ = true

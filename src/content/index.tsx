@@ -9,10 +9,11 @@ import { createStore } from './redux'
 import { I18nContextProvider } from '@/_helpers/i18n'
 
 import './_style.scss'
+import { getWindowObj } from '@/_helpers/browser-api'
 
 // Only load on top frame
-if (window.parent === window && !window.__SALADICT_PANEL_LOADED__) {
-  window.__SALADICT_PANEL_LOADED__ = true
+if (window.parent === window && !getWindowObj().__SALADICT_PANEL_LOADED__) {
+  getWindowObj().__SALADICT_PANEL_LOADED__ = true
 
   main()
 }

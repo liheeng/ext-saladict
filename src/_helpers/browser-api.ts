@@ -587,12 +587,13 @@ export function getWindowObj(): any {
 
 export function isServiceWorker(): boolean {
   // return getGlobalThis().registration !== undefined
-  return self instanceof Worker
+  // return self instanceof Worker
+  return typeof window === 'undefined' && typeof self !== 'undefined'
 }
 
-export function isSharedWorker(): boolean {
-  return self instanceof SharedWorker
-}
+// export function isSharedWorker(): boolean {
+//   return self instanceof SharedWorker
+// }
 
 export function getGlobal(): any {
   // 现代浏览器 和 Web Workers

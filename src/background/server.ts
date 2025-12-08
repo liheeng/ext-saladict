@@ -38,7 +38,7 @@ export class SalaDictExtension {
   }
 
   private constructor() {
-    console.info('create AiDictExtension')
+    console.info('create SalaDictExtension')
     // singleton
   }
 }
