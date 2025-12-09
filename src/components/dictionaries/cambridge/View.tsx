@@ -46,8 +46,6 @@ export const DictCambridge: FC<ViewPorps<
     return null
   }
 
-  console.debug('Cambridge parsedResult', parsedResult)
-
   return (
     <>
       {parsedResult.result.map(entry => (
