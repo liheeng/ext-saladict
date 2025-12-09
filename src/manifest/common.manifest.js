@@ -105,8 +105,6 @@ module.exports = {
     'storage',
     'tabs',
     'unlimitedStorage',
-    'webRequest',
-    'webRequestBlocking',
     'scripting'
   ],
 
