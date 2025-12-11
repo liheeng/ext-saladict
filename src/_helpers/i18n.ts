@@ -50,6 +50,38 @@ export interface DictLocales {
   }
 }
 
+// FIXME: added by Henry Lee(liheeng@gmail.com), 202501211
+// Since browser extension manifest v3, the security policy are updated, the import is forbidden to load script dynamically.
+// Here use require.context to get context object of target resources, then use them by pattern.
+const localesContext = require.context(
+  `@/_locales/`,
+  true,
+  /\.ts$/
+) // Updated regex for .ts or .tsx
+
+async function loadI18nDefinitions(lang: LangCode, ns: Namespace): Promise<any | null> {
+  const matchingModules = localesContext
+    .keys()
+    .filter(key => key.includes('/' + lang + '/' + ns + '.ts'))
+
+  if (matchingModules.length > 0) {
+    const module = localesContext(matchingModules[0]) // Load the first match
+    console.log(`Loaded module: ${matchingModules[0]}`, module)
+    if (module.default) {
+      if (typeof module.default === 'function') {
+        module.default()
+      } else {
+        console.log('Loaded module has a default export:', module.default)
+      }
+    }
+    return module
+  }
+
+  console.log(`No module found matching pattern: ${lang}/${ns}.ts`)
+  return null
+}
+// End of FIXME
+
 export async function i18nLoader(): Promise<i18n.i18n> {
   if (i18n.language) {
     // singleton
@@ -77,11 +109,15 @@ export async function i18nLoader(): Promise<i18n.i18n> {
             return syncLocales
           }
 
-          const { locale } = await import(
-            /* webpackInclude: /_locales\/[^/]+\/[^/]+\.ts$/ */
-            /* webpackMode: "lazy" */
-            `@/_locales/${lang}/${ns}.ts`
-          )
+          // FIXME: added by Henry Lee(liheeng@gmail.com), 202501211
+          // const { locale } = await import(
+          //   /* webpackInclude: /_locales\/[^/]+\/[^/]+\.ts$/ */
+          //   /* webpackMode: "lazy" */
+          //   `@/_locales/${lang}/${ns}.ts`
+          // )
+          const { locale } = await loadI18nDefinitions(lang, ns);
+          // End of FIXME
+          
           cb(null, locale)
           return locale
         } catch (err) {
