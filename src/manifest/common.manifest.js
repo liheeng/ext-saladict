@@ -17,6 +17,17 @@ module.exports = {
     '128': 'assets/icon-128.png'
   },
 
+  action: {
+    default_title: 'saladict-search',
+    default_icon: {
+      '16': 'assets/icon-16.png',
+      '32': 'assets/icon-32.png',
+      '48': 'assets/icon-48.png',
+      '128': 'assets/icon-128.png'
+    },
+    default_popup: 'popup.html' // keep popup for safari compatibility
+  },
+
   commands: {
     'toggle-active': {
       description: '__MSG_command_toggle_active__'
