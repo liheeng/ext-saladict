@@ -238,6 +238,7 @@ export class ContextMenus {
     }
 
     const ctx: browser.contextMenus.ContextType[] = [
+      // 'all',
       'audio',
       'editable',
       'frame',
@@ -314,14 +315,21 @@ export class ContextMenus {
     await createContextMenu({
       id: 'view_as_pdf_ba',
       title: t('view_as_pdf'),
-      contexts: ['browser_action', 'page_action']
+      // FIXME: added by Henry Lee(liheeng@gmail.com), 20251213
+      // Since browser_action and page_action are deprecated since Manifest V3,
+      // we change the context to 'all' to make sure the context menu show up in browser action menu.
+      // contexts: ['browser_action', 'page_action']
+      // contexts: ['page']
+      contexts: ['all']
     })
 
     if (browserActionItems.length > 2) {
       await createContextMenu({
         id: 'saladict_ba_container',
         title: t('page_translations'),
-        contexts: ['browser_action', 'page_action']
+        // contexts: ['browser_action', 'page_action']
+        // contexts: ['page']
+        contexts: ['all']
       })
 
       for (const id of browserActionItems) {
@@ -329,7 +337,9 @@ export class ContextMenus {
           id: id + '_ba',
           parentId: 'saladict_ba_container',
           title: getTitle(id),
-          contexts: ['browser_action', 'page_action']
+          // contexts: ['browser_action', 'page_action']
+          // contexts: ['page']
+          contexts: ['all']
         })
       }
     } else if (browserActionItems.length > 0) {
@@ -337,7 +347,9 @@ export class ContextMenus {
         await createContextMenu({
           id: id + '_ba',
           title: getTitle(id),
-          contexts: ['browser_action', 'page_action']
+          // contexts: ['browser_action', 'page_action']
+          // contexts: ['page']
+          contexts: ['all']
         })
       }
     } else {
@@ -345,19 +357,24 @@ export class ContextMenus {
       await createContextMenu({
         id: 'google_cn_page_translate_ba',
         title: t('google_cn_page_translate'),
-        contexts: ['browser_action', 'page_action']
+        // contexts: ['browser_action', 'page_action']
+        // contexts: ['page']
+        contexts: ['all']
       })
       await createContextMenu({
         id: 'youdao_page_translate_ba',
         title: t('youdao_page_translate'),
-        contexts: ['browser_action', 'page_action']
+        // contexts: ['browser_action', 'page_action']
+        // contexts: ['page']
+        contexts: ['all']
       })
     }
 
     await createContextMenu({
       type: 'separator',
       id: Date.now().toString(),
-      contexts: ['browser_action']
+      // contexts: ['browser_action']
+      contexts: ['all']
     })
 
     if (searchHistory) {
@@ -365,7 +382,8 @@ export class ContextMenus {
       await createContextMenu({
         id: 'search_history',
         title: t('history_title'),
-        contexts: ['browser_action']
+        // contexts: ['browser_action']
+        contexts: ['all']
       })
     }
 
@@ -373,7 +391,8 @@ export class ContextMenus {
     await createContextMenu({
       id: 'notebook',
       title: t('notebook_title'),
-      contexts: ['browser_action']
+      // contexts: ['browser_action']
+      contexts: ['all']
     })
 
     function getTitle(id: string): string {
@@ -384,6 +403,7 @@ export class ContextMenus {
     function createContextMenu(
       createProperties: CreateMenuOptions
     ): Promise<void> {
+      console.debug('Creating context menu:', createProperties)
       return new Promise(resolve => {
         browser.contextMenus.create(createProperties, () => {
           if (browser.runtime.lastError) {
