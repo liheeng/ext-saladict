@@ -26,18 +26,26 @@ console.info(
   getGlobalThis().fake_background_window
 )
 
+console.debug('Saladict extension initializing...')
 SalaDictExtension.init()
 
 // init first to recevice self messaging
+console.debug('Saladict Server init...')
 message.self.initServer()
 
+console.debug('Starting sync services...')
 startSyncServiceInterval()
 
+console.debug('ContextMenus init...')
 ContextMenus.init()
+
+console.debug('BackgroundServer init...')
 BackgroundServer.init()
 
+console.debug('Caiyun translation backend setup...')
 setupCaiyunTrsBackend()
 
+console.debug('Request GA listener setup...')
 setupRequestGAListener()
 
 getConfig().then(async config => {
