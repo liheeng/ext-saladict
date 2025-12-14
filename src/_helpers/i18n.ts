@@ -53,13 +53,12 @@ export interface DictLocales {
 // FIXME: added by Henry Lee(liheeng@gmail.com), 202501211
 // Since browser extension manifest v3, the security policy are updated, the import is forbidden to load script dynamically.
 // Here use require.context to get context object of target resources, then use them by pattern.
-const localesContext = require.context(
-  `@/_locales/`,
-  true,
-  /\.ts$/
-) // Updated regex for .ts or .tsx
+const localesContext = require.context(`@/_locales/`, true, /\.ts$/) // Updated regex for .ts or .tsx
 
-async function loadI18nDefinitions(lang: LangCode, ns: Namespace): Promise<any | null> {
+async function loadI18nDefinitions(
+  lang: LangCode,
+  ns: Namespace
+): Promise<any | null> {
   const matchingModules = localesContext
     .keys()
     .filter(key => key.includes('/' + lang + '/' + ns + '.ts'))
@@ -115,9 +114,9 @@ export async function i18nLoader(): Promise<i18n.i18n> {
           //   /* webpackMode: "lazy" */
           //   `@/_locales/${lang}/${ns}.ts`
           // )
-          const { locale } = await loadI18nDefinitions(lang, ns);
+          const { locale } = await loadI18nDefinitions(lang, ns)
           // End of FIXME
-          
+
           cb(null, locale)
           return locale
         } catch (err) {
