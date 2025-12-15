@@ -1,9 +1,5 @@
 {
   "background": {
-    
-  },
-  "options_ui": {
-    "chrome_style": false
   },
   "optional_permissions": [
     "background"

@@ -199,6 +199,9 @@ export class ContextMenus {
       case 'notebook':
         openUrl(browser.runtime.getURL('notebook.html'))
         break
+      case 'saladict_options':
+        openUrl(browser.runtime.getURL('options.html'))
+        break
       default:
         {
           const item = SalaDictExtension.appConfig.contextMenus.all[menuItemId]
@@ -392,6 +395,19 @@ export class ContextMenus {
       id: 'notebook',
       title: t('notebook_title'),
       // contexts: ['browser_action']
+      contexts: ['all']
+    })
+
+    await createContextMenu({
+      type: 'separator',
+      id: Date.now().toString(),
+      // contexts: ['browser_action']
+      contexts: ['all']
+    })
+
+    await createContextMenu({
+      id: 'saladict_options',
+      title: t('options'),
       contexts: ['all']
     })
 

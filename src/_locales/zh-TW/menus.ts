@@ -37,5 +37,6 @@ export const locale: typeof _locale = {
   view_as_pdf: '在 PDF 閱讀器中開啟',
   youdao: '有道字典',
   youdao_page_translate: '有道網頁翻譯',
-  youglish: 'YouGlish'
+  youglish: 'YouGlish',
+  options: '沙拉查詞選項'
 }

@@ -38,5 +38,6 @@ export const locale: typeof _locale = {
   view_as_pdf: 'Abrir en el visor de PDF',
   youdao: 'Youdao',
   youdao_page_translate: 'Traductor web de Youdao',
-  youglish: 'YouGlish'
+  youglish: 'YouGlish',
+  options: 'Opciones de Saladict'
 }

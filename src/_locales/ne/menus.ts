@@ -38,5 +38,6 @@ export const locale: typeof _locale = {
   view_as_pdf: 'पीडीएफ भिउमा खोल्नुहोस्',
   youdao: 'यौडाओ',
   youdao_page_translate: 'यौडाओ पृष्ठ अनुवाद',
-  youglish: 'यौग्लिश'
+  youglish: 'यौग्लिश',
+  options: 'सलाडिक्ट विकल्पहरू'
 }

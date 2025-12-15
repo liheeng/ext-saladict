@@ -1,27 +1,28 @@
 module.exports = {
   manifest_version: 3,
 
-  homepage_url: 'https://dict.beaitoday.com/',
+  homepage_url: 'https://saladict.crimx.com/',
 
   minimum_chrome_version: '55',
 
-  name: 'saladict-revised',
-  short_name: 'saladict-revised',
-  description: 'A revised version of the Saladict extension.',
+  name: '__MSG_extension_name__',
+  short_name: '__MSG_extension_short_name__',
+  description: '__MSG_extension_description__',
 
   default_locale: 'zh_CN',
 
   icons: {
     '16': 'assets/icon-16.png',
+    '24': 'assets/icon-24.png',
     '48': 'assets/icon-48.png',
     '128': 'assets/icon-128.png'
   },
 
   action: {
-    default_title: 'saladict-search',
+    default_title: '__MSG_command_open_quick_search__',
     default_icon: {
       '16': 'assets/icon-16.png',
-      '32': 'assets/icon-32.png',
+      '24': 'assets/icon-24.png',
       '48': 'assets/icon-48.png',
       '128': 'assets/icon-128.png'
     },
@@ -123,5 +124,7 @@ module.exports = {
 
   optional_permissions: ['clipboardRead', 'clipboardWrite'],
 
-  content_security_policy: "script-src 'self'; object-src 'self';"
+  content_security_policy: {
+    extension_pages: "script-src 'self'; object-src 'self'"
+  }
 }
