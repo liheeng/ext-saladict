@@ -1,125 +1,37 @@
-// Firefox does not support dynamic import in WebExtension
-// https://bugzilla.mozilla.org/show_bug.cgi?id=1536094
-
+// Firefox manifest background fix script
 const path = require('path')
 const fs = require('fs-extra')
-const jsdom = require('jsdom')
-const { JSDOM } = jsdom
 
 const ffPath = path.join(__dirname, '../build/firefox')
 const manifestPath = path.join(ffPath, 'manifest.json')
+const backgroundFilePath = path.join(ffPath, 'background.js')
 
 const manifest = require(manifestPath)
 
 main()
 
 async function main() {
-  const htmls = (await fs.readdir(ffPath)).filter(name =>
-    name.endsWith('.html')
-  )
-  const htmlTexts = await Promise.all(
-    htmls.map(html => fs.readFile(path.join(ffPath, html), 'utf8'))
-  )
+  // Read the contents of the background.js file
+  const backgroundFileContent = fs.readFileSync(backgroundFilePath, 'utf8')
 
-  const staticChunkIds = await getStaticChunks(htmlTexts)
-  const allChunks = await fs.readdir(path.join(ffPath, 'assets'))
-  const dynamicChunks = allChunks
-    .filter(name => {
-      const m = /^([^.]+)\.[^.]+\.js$/.exec(name)
-      if (m) {
-        return !staticChunkIds.has(m[1])
-      }
-      return false
-    })
-    .map(filename => `/assets/${filename}`)
+  // Parse the contents to find all the JavaScript file paths
+  const regex = /importScripts\('([^']+)'\)/g
+  const matches = backgroundFileContent.match(regex)
 
-  const dynamicChunksWithoutAntd = dynamicChunks.filter(
-    name => !name.startsWith('/assets/antd')
-  )
+  // Create an array to store the parsed JavaScript file paths
+  const jsFilePaths = []
 
-  manifest.content_scripts.forEach(item => {
-    if (item.js) {
-      if (item.js.some(name => name.startsWith('assets/selection'))) {
-        return
-      }
-      item.js.push(...dynamicChunksWithoutAntd)
-    }
+  // Iterate over the matches and extract the JavaScript file paths
+  matches.forEach(match => {
+    const filePath = match.split("'")[1]
+    jsFilePaths.push(filePath)
   })
 
-  manifest.background.scripts.push(...dynamicChunksWithoutAntd)
+  // Log the parsed JavaScript file paths
+  console.log(jsFilePaths)
+  manifest.background = {
+    scripts: jsFilePaths
+  }
 
-  await fs.outputJSON(manifestPath, manifest, { spaces: 2 })
-
-  await Promise.all(
-    htmlTexts.map((text, i) => {
-      const dom = new JSDOM(text)
-
-      let chunks = dynamicChunksWithoutAntd
-
-      if (
-        htmls[i] === 'options.html' ||
-        htmls[i] === 'notebook.html' ||
-        htmls[i] === 'history.html'
-      ) {
-        chunks = dynamicChunks
-      }
-
-      chunks.forEach(name => {
-        const script = dom.window.document.createElement('script')
-        script.src = name
-        dom.window.document.head.appendChild(script)
-      })
-      return fs.outputFile(
-        path.join(ffPath, htmls[i]),
-        dom.window.document.documentElement.outerHTML
-      )
-    })
-  )
-
-  // urgh
-  // https://github.com/mozilla/addons-linter/issues/2498
-  const runtime = allChunks.find(filename => filename.startsWith('runtime.'))
-  const runtimePath = path.join(ffPath, 'assets', runtime)
-  await fs.outputFile(
-    runtimePath,
-    (await fs.readFile(runtimePath, 'utf8')).replace(
-      /import\(/g,
-      'saladictImport('
-    )
-  )
-}
-
-async function getStaticChunks(htmls) {
-  const staticChunks = new Set()
-
-  htmls.forEach(text => {
-    const matcher = /"\/assets\/([^.]+)\.[^.]+\.js"/g
-    let m
-    // eslint-disable-next-line no-cond-assign
-    while ((m = matcher.exec(text))) {
-      staticChunks.add(m[1])
-    }
-  })
-
-  manifest.content_scripts.forEach(item => {
-    if (item.js) {
-      item.js.forEach(name => {
-        const m = /assets\/([^.]+)\.[^.]+\.js/.exec(name)
-        if (m) {
-          staticChunks.add(m[1])
-        }
-      })
-    }
-  })
-
-  manifest.background.scripts.forEach(name => {
-    const m = /assets\/([^.]+)\.[^.]+\.js/.exec(name)
-    if (m) {
-      staticChunks.add(m[1])
-    }
-  })
-
-  staticChunks.delete('franc')
-
-  return staticChunks
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8')
 }

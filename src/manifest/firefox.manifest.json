@@ -2,11 +2,9 @@
   "options_ui": {
     "browser_style": false
   },
-  "applications": {
+  "browser_specific_settings": {
     "gecko": {
-      "id": "saladict@crimx.com",
-      "strict_min_version": "67.0"
+      "id": "saladict@crimx.com"
     }
-  },
-  "content_security_policy": "script-src 'self'; object-src 'self'"
+  }
 }

@@ -109,7 +109,6 @@ module.exports = {
   ],
 
   permissions: [
-    '<all_urls>',
     'alarms',
     'contextMenus',
     'cookies',

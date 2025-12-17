@@ -495,7 +495,11 @@ function initClient(): Promise<typeof window.pageId> {
   if (_window.pageId === undefined) {
     return message
       .send<'PAGE_INFO'>({ type: 'PAGE_INFO' })
-      .then(({ pageId, faviconURL, pageTitle, pageURL }) => {
+      .then(res => {
+        if (!res) {
+          throw new Error('PAGE_INFO response is undefined')
+        }
+        const { pageId, faviconURL, pageTitle, pageURL } = res
         const _window = getWindowObj()
         _window.pageId = pageId
         _window.faviconURL = faviconURL

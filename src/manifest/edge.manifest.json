@@ -1,6 +1,6 @@
 {
   "background": {
-    "persistent": true
+    
   },
   "optional_permissions": [
     "background"
